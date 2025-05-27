@@ -2,7 +2,7 @@
 // This file will manage the state and operations for ships.
 // It will utilize localStorageUtils for data persistence.
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getAllShips, saveShips } from '../utils/localStorageUtils';
+import { getAllShips, saveShips } from '@/utils/localStorageUtils'
 
 const ShipsContext = createContext(null);
 

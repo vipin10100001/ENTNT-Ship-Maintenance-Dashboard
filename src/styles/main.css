@@ -103,8 +103,8 @@ button:disabled {
   border-color: var(--error-red);
 }
 .btn-danger:hover:not(:disabled) {
-  background-color: darken(var(--error-red), 10%); /* Requires Sass or calc() for dynamic darkening */
-  border-color: darken(var(--error-red), 10%);
+  background-color: #c82333; /* Slightly darker red */
+  border-color: #bd2130;
 }
 
 
@@ -269,8 +269,8 @@ table tbody tr:hover {
     border-color: var(--error-red);
 }
 .sidebar-footer button:hover {
-    background-color: darken(var(--error-red), 10%);
-    border-color: darken(var(--error-red), 10%);
+    background-color: #c82333; /* Slightly darker red */
+    border-color: #bd2130;
 }
 
 
@@ -326,6 +326,61 @@ table tbody tr:hover {
   margin-bottom: 35px;
   font-weight: 500;
 }
+
+/* Dashboard specific styles */
+.dashboard-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.dashboard-stats-grid .stat-card {
+    text-align: center;
+    padding: 1rem;
+}
+
+.dashboard-stats-grid .stat-card h3 {
+    font-size: 1.2rem;
+    color: var(--secondary-gray);
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-stats-grid .stat-card p {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--primary-blue);
+    margin-bottom: 0;
+}
+
+.dashboard-sections-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Single column by default */
+    gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .dashboard-sections-grid {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Two columns for larger screens */
+    }
+}
+
+.recent-jobs-section,
+.critical-alerts-section,
+.my-ships-section {
+    /* Styles for these specific cards */
+    padding: 1.5rem;
+}
+
+.recent-jobs-section h2,
+.critical-alerts-section h2,
+.my-ships-section h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
 
 /* Responsive Adjustments */
 @media (max-width: 992px) { /* Tablet and smaller */
@@ -414,5 +469,8 @@ table tbody tr:hover {
   button {
     padding: 0.6rem 1rem;
     font-size: 0.95rem;
+  }
+  .dashboard-stats-grid {
+    grid-template-columns: 1fr; /* Stack stats vertically on small mobile */
   }
 }

@@ -3,15 +3,16 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
-import ShipsPage from './pages/ShipsPage'; // Import new pages
+import ShipsPage from './pages/ShipsPage';
 import ShipDetailPage from './pages/ShipDetailPage';
 import JobsPage from './pages/JobsPage';
+
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { ShipsProvider } from '@/contexts/ShipsContext'; // Import other providers
+import { ShipsProvider } from '@/contexts/ShipsContext';
 import { ComponentsProvider } from '@/contexts/ComponentsContext';
 import { JobsProvider } from '@/contexts/JobsContext';
 
-import Layout from '@/components/Layout/Layout'; // Import the new Layout component
+import Layout from '@/components/Layout/Layout';
 
 // ProtectedRoute component to guard routes
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -34,41 +35,70 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 };
 
 function AppContent() {
-  const { loadingAuth } = useAuth();
+  const { currentUser, loadingAuth } = useAuth();
 
   if (loadingAuth) {
     return <div className="loading-fullscreen">Loading authentication...</div>;
   }
 
   return (
-    // Wrap all routes within context providers
     <ShipsProvider>
       <ComponentsProvider>
         <JobsProvider>
-          <div className="app-container"> {/* This container manages overall app layout */}
+          <div className="app-container">
             <Routes>
-              {/* Public route for Login */}
+              {/* Public Route */}
               <Route path="/login" element={<LoginPage />} />
 
-              {/* Protected Routes wrapped in Layout */}
-              <Route element={<ProtectedRoute allowedRoles={['Admin', 'Inspector', 'Engineer']} />}>
-                <Route element={<Layout />}> {/* Use Layout for all protected routes */}
-                  <Route path="/dashboard" element={<DashboardPage />} />
-                  <Route path="/ships" element={<ShipsPage />} />
-                  <Route path="/ships/:id" element={<ShipDetailPage />} />
-                  <Route path="/jobs" element={<JobsPage />} />
-                </Route>
-              </Route>
-
-              {/* Redirect root to dashboard if authenticated, otherwise to login */}
+              {/* Protected Routes */}
               <Route
-                path="/"
+                path="/dashboard"
                 element={
-                  <Navigate to={loadingAuth ? '/login' : (useAuth().currentUser ? '/dashboard' : '/login')} replace />
+                  <ProtectedRoute allowedRoles={['Admin', 'Inspector', 'Engineer']}>
+                    <Layout>
+                      <DashboardPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ships"
+                element={
+                  <ProtectedRoute allowedRoles={['Admin', 'Inspector', 'Engineer']}>
+                    <Layout>
+                      <ShipsPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ships/:id"
+                element={
+                  <ProtectedRoute allowedRoles={['Admin', 'Inspector', 'Engineer']}>
+                    <Layout>
+                      <ShipDetailPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs"
+                element={
+                  <ProtectedRoute allowedRoles={['Admin', 'Inspector', 'Engineer']}>
+                    <Layout>
+                      <JobsPage />
+                    </Layout>
+                  </ProtectedRoute>
                 }
               />
 
-              {/* Catch-all for undefined routes, redirects to login */}
+              {/* Redirect root based on auth */}
+              <Route
+                path="/"
+                element={currentUser ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />}
+              />
+
+              {/* Catch-all route */}
               <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
           </div>

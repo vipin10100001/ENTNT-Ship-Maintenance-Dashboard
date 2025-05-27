@@ -1,87 +1,93 @@
 // src/contexts/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { saveCurrentUser, loadCurrentUser, removeCurrentUser, getAllUsers } from '../components/utils/localStorageUtils';
-// No need to import useNavigate here, it's used in LoginForm.jsx
+// FIX: Corrected import names from localStorageUtils
+import { loadCurrentUser, saveCurrentUser, removeCurrentUser, getUserByEmail, getAllUsers } from '@/utils/localStorageUtils';
+// FIX: Corrected import from roleUtils to use the specific checks
+import { isUserAdmin, isUserInspector, isUserEngineer, hasRequiredRole, USER_ROLES } from '@/utils/roleUtils';
+
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true); // To indicate if auth state is still loading
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
-  // Load current user from local storage when the app starts
   useEffect(() => {
-    const initializeAuth = async () => {
+    const loadUserFromLocalStorage = async () => {
       try {
-        const storedUser = await loadCurrentUser();
+        const storedUser = await loadCurrentUser(); // Use loadCurrentUser for the session
         if (storedUser) {
           setCurrentUser(storedUser);
-          console.log('User found in local storage:', storedUser.email);
+          console.log("User found in local storage: " + storedUser.email);
         } else {
-          console.log('No user found in local storage.');
+            setCurrentUser(null);
         }
       } catch (error) {
-        console.error('Error loading current user from local storage:', error);
+        console.error("Failed to load user from local storage:", error);
+        setCurrentUser(null);
       } finally {
-        setLoading(false); // Authentication initialization is complete
+        setLoadingAuth(false);
       }
     };
-    initializeAuth();
+
+    loadUserFromLocalStorage();
   }, []);
 
   const login = async (email, password) => {
-    setLoading(true); // Indicate login process
+    setLoadingAuth(true); // Indicate login process start
     try {
-      const users = await getAllUsers(); // Get all mock users
+      const users = await getAllUsers(); // Get all mock users to find match
       const user = users.find(
         (u) => u.email === email && u.password === password
       );
 
       if (user) {
         setCurrentUser(user);
-        await saveCurrentUser(user); // Persist user to local storage
+        await saveCurrentUser(user); // Save the logged-in user to current session
         console.log('Login successful for:', user.email);
-        setLoading(false);
         return true; // Indicate successful login
       } else {
         console.warn('Login failed: Invalid credentials for', email);
-        setLoading(false);
         return false; // Indicate failed login
       }
     } catch (error) {
       console.error('Error during login:', error);
-      setLoading(false);
       return false;
+    } finally {
+        setLoadingAuth(false); // Indicate login process end
     }
   };
 
+
   const logout = async () => {
-    setLoading(true);
+    setLoadingAuth(true); // Indicate logout process start
     try {
       setCurrentUser(null);
-      await removeCurrentUser(); // Remove user from local storage
+      await removeCurrentUser(); // Remove current user from local storage
       console.log('User logged out.');
     } catch (error) {
       console.error('Error during logout:', error);
     } finally {
-      setLoading(false);
+      setLoadingAuth(false); // Indicate logout process end
     }
   };
 
-  // Helper function for role-based access control (will be useful later)
   const hasRole = (roles) => {
-    if (!currentUser) return false;
-    // Ensure roles is an array for consistent checking
-    const rolesArray = Array.isArray(roles) ? roles : [roles];
-    return rolesArray.includes(currentUser.role);
+    // FIX: Using the hasRequiredRole from roleUtils for consistency and flexibility
+    return hasRequiredRole(currentUser, roles);
   };
 
+
   const value = {
-    currentUser, // The currently logged-in user object
-    login,       // Function to log in
-    logout,      // Function to log out
-    hasRole,     // Function to check user roles
-    loadingAuth: loading, // Boolean to indicate if authentication state is being loaded
+    currentUser,
+    login,
+    logout,
+    loadingAuth,
+    hasRole,
+    // You can also expose specific role checks if needed, but hasRole is more generic
+    isUserAdmin: (user) => isUserAdmin(user || currentUser),
+    isUserInspector: (user) => isUserInspector(user || currentUser),
+    isUserEngineer: (user) => isUserEngineer(user || currentUser),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

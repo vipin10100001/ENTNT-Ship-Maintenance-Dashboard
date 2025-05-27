@@ -56,7 +56,7 @@ export const JobsProvider = ({ children }) => {
     return jobs.find(job => job.id === id);
   };
 
-  const filterAndGetJobs = (shipId, status, priority) => { [cite: 11]
+  const filterAndGetJobs = (shipId, status, priority) => { 
     let filtered = jobs;
     if (shipId) filtered = filtered.filter(job => job.shipId === shipId);
     if (status) filtered = filtered.filter(job => job.status === status);

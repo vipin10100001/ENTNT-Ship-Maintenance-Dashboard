@@ -1,65 +1,53 @@
 // src/components/Layout/Layout.jsx
 import React from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext'; // Using alias
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext'; // Assuming AuthContext is needed for logout
 
-function Layout() {
-  const { currentUser, logout, hasRole } = useAuth();
+function Layout({ children }) { // Accepts children prop
+  const { logout } = useAuth(); // Destructure logout from useAuth
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login', { replace: true });
+  const handleLogout = () => {
+    logout(); // Call the logout function from AuthContext
+    navigate('/login'); // Redirect to login page after logout
   };
-
-  if (!currentUser) {
-    return null; // Should be handled by ProtectedRoute, but good for safety
-  }
 
   return (
     <div className="app-layout">
       {/* Sidebar */}
-      <div className="sidebar">
+      <aside className="sidebar">
         <div>
-          <div className="sidebar-logo">ENTNT</div>
+          <div className="sidebar-logo">Entnt Ship</div>
           <nav className="sidebar-nav">
             <ul>
               <li>
-                <NavLink to="/dashboard" className={({ isActive }) => (isActive ? 'active' : '')}>
+                <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'active' : ''}>
                   Dashboard
                 </NavLink>
               </li>
-              {hasRole(['Admin', 'Inspector']) && ( // Example RBAC for menu items
-                <li>
-                  <NavLink to="/ships" className={({ isActive }) => (isActive ? 'active' : '')}>
-                    Ships
-                  </NavLink>
-                </li>
-              )}
-              {hasRole(['Admin', 'Engineer']) && (
-                <li>
-                  <NavLink to="/jobs" className={({ isActive }) => (isActive ? 'active' : '')}>
-                    Maintenance Jobs
-                  </NavLink>
-                </li>
-              )}
+              <li>
+                <NavLink to="/ships" className={({ isActive }) => isActive ? 'active' : ''}>
+                  Ships
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/jobs" className={({ isActive }) => isActive ? 'active' : ''}>
+                  Jobs
+                </NavLink>
+              </li>
               {/* Add more navigation links here */}
             </ul>
           </nav>
         </div>
         <div className="sidebar-footer">
-          <button onClick={handleLogout}>Logout ({currentUser.email})</button>
+          <button onClick={handleLogout}>Logout</button>
         </div>
-      </div>
+      </aside>
 
       {/* Main Content Area */}
-      <div className="main-content">
-        <header className="main-content-header">
-          <h2>{/* Dynamically display page title based on route */}</h2>
-          {/* You can add user info/profile dropdown here */}
-        </header>
-        <Outlet /> {/* This is where nested route components will render */}
-      </div>
+      <main className="main-content">
+        {children} {/* This is where DashboardPage, ShipsPage, etc., will be rendered */}
+      </main>
     </div>
   );
 }
