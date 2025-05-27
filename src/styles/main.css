@@ -1,191 +1,418 @@
 /* src/styles/main.css */
 
-/* Basic Reset & Global Body Styles */
+/* --- Global & Reset Styles --- */
+:root {
+  --primary-blue: #007bff;
+  --primary-dark-blue: #0056b3;
+  --secondary-gray: #6c757d;
+  --light-gray: #f8f9fa;
+  --medium-gray: #e9ecef;
+  --dark-gray: #343a40;
+  --text-color: #333;
+  --border-color: #dee2e6;
+  --error-red: #dc3545;
+  --success-green: #28a745;
+  --info-blue: #17a2b8;
+  --box-shadow-light: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  --box-shadow-medium: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+  --border-radius: 0.3rem;
+}
+
 body {
-    margin: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* A more modern sans-serif */
-    background-color: #eef2f6; /* Light, calming background */
-    color: #333;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh; /* Ensure it takes full viewport height */
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  
-  #root {
+  margin: 0;
+  font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--light-gray);
+  color: var(--text-color);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  display: flex;
+  min-height: 100vh; /* Ensure full viewport height */
+  width: 100%;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column; /* Default to column for small screens */
+  flex-grow: 1; /* Take up available space */
+  max-width: 100%; /* Initially fluid */
+}
+
+/* --- Typography --- */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--dark-gray);
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.75rem; }
+h4 { font-size: 1.5rem; }
+p { margin-bottom: 1rem; }
+
+/* --- Buttons --- */
+button {
+  display: inline-block;
+  font-weight: 400;
+  color: #fff;
+  text-align: center;
+  vertical-align: middle;
+  user-select: none;
+  background-color: var(--primary-blue);
+  border: 1px solid var(--primary-blue);
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  border-radius: var(--border-radius);
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background-color: var(--primary-dark-blue);
+  border-color: var(--primary-dark-blue);
+}
+
+button:disabled {
+  background-color: #cccccc;
+  border-color: #cccccc;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Secondary Button (example) */
+.btn-secondary {
+  color: var(--dark-gray);
+  background-color: var(--medium-gray);
+  border-color: var(--medium-gray);
+}
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--secondary-gray);
+  border-color: var(--secondary-gray);
+  color: #fff;
+}
+
+/* Danger Button */
+.btn-danger {
+  background-color: var(--error-red);
+  border-color: var(--error-red);
+}
+.btn-danger:hover:not(:disabled) {
+  background-color: darken(var(--error-red), 10%); /* Requires Sass or calc() for dynamic darkening */
+  border-color: darken(var(--error-red), 10%);
+}
+
+
+/* --- Forms --- */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--dark-gray);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  display: block;
+  width: calc(100% - 1.5rem); /* Account for padding */
+  padding: 0.6rem 0.75rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--text-color);
+  background-color: #fff;
+  background-clip: padding-box;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  box-sizing: border-box; /* Include padding in width */
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #80bdff;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.error-message {
+  color: var(--error-red);
+  font-size: 0.875em;
+  margin-top: 0.25rem;
+  background-color: rgba(var(--error-red), 0.1);
+  border: 1px solid var(--error-red);
+  padding: 0.5rem;
+  border-radius: var(--border-radius);
+}
+
+/* --- Cards / Panels --- */
+.card {
+  background-color: #fff;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow-medium);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--medium-gray);
+}
+
+/* --- Tables --- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+  background-color: #fff;
+  border-radius: var(--border-radius);
+  overflow: hidden; /* For rounded corners */
+  box-shadow: var(--box-shadow-light);
+}
+
+table th,
+table td {
+  padding: 0.75rem;
+  vertical-align: top;
+  border-top: 1px solid var(--border-color);
+  text-align: left;
+}
+
+table thead th {
+  vertical-align: bottom;
+  border-bottom: 2px solid var(--border-color);
+  background-color: var(--medium-gray);
+  color: var(--dark-gray);
+  font-weight: 600;
+}
+
+table tbody tr:hover {
+  background-color: #f2f2f2;
+}
+
+
+/* --- Specific Page Layouts --- */
+
+/* App Container for layout */
+.app-layout {
+  display: flex;
+  flex-direction: row; /* Sidebar and content side-by-side */
+  flex-grow: 1;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 250px;
+  background-color: var(--dark-gray);
+  color: #fff;
+  padding: 1.5rem;
+  box-shadow: var(--box-shadow-medium);
+  flex-shrink: 0; /* Don't shrink */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Push logout to bottom */
+}
+
+.sidebar-logo {
+  font-size: 1.8rem;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #fff;
+}
+
+.sidebar-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-nav li {
+  margin-bottom: 0.5rem;
+}
+
+.sidebar-nav a {
+  display: block;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  padding: 0.8rem 1rem;
+  border-radius: var(--border-radius);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-nav a:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.sidebar-nav a.active {
+  background-color: var(--primary-blue);
+  color: #fff;
+  font-weight: bold;
+}
+
+.sidebar-footer {
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
+
+.sidebar-footer button {
     width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    background-color: var(--error-red);
+    border-color: var(--error-red);
+}
+.sidebar-footer button:hover {
+    background-color: darken(var(--error-red), 10%);
+    border-color: darken(var(--error-red), 10%);
+}
+
+
+/* Main Content Area */
+.main-content {
+  flex-grow: 1;
+  padding: 2rem;
+  background-color: var(--light-gray);
+}
+
+.main-content-header {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Login Page Specific Styles (from previous steps) */
+.login-page-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  flex-grow: 1; /* Take full height in App.jsx */
+}
+
+.app-title {
+  font-size: 2.8rem;
+  color: var(--dark-gray);
+  margin-bottom: 50px;
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
+}
+
+.login-form-container {
+  background-color: #ffffff;
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: var(--box-shadow-medium);
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  box-sizing: border-box;
+  border: 1px solid var(--medium-gray);
+}
+
+.login-form-container h2 {
+  font-size: 2em;
+  color: var(--dark-gray);
+  margin-bottom: 35px;
+  font-weight: 500;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 992px) { /* Tablet and smaller */
+  .app-layout {
+    flex-direction: column; /* Stack sidebar and content */
   }
-  
-  .app-container {
+  .sidebar {
     width: 100%;
-    max-width: 1200px; /* Max width for the whole app content */
-    padding: 20px;
-    box-sizing: border-box; /* Include padding in width */
-  }
-  
-  /* Login Page Specific Container */
-  .login-page-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    padding: 1rem;
+    height: auto; /* Allow sidebar height to adjust */
+    flex-direction: row; /* Row direction for nav items */
+    justify-content: space-between;
     align-items: center;
-    width: 100%;
-    /* min-height: calc(100vh - 40px); If you want it to stretch, but often login is centered */
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    box-shadow: var(--box-shadow-light);
   }
-  
-  /* Application Title on Login Page */
+  .sidebar-logo {
+    margin-bottom: 0;
+    margin-right: 1rem;
+  }
+  .sidebar-nav {
+    flex-grow: 1;
+  }
+  .sidebar-nav ul {
+    display: flex;
+    justify-content: space-around; /* Distribute nav items */
+  }
+  .sidebar-nav li {
+    margin-bottom: 0;
+  }
+  .sidebar-nav a {
+    padding: 0.5rem 0.8rem;
+    text-align: center;
+  }
+  .sidebar-footer {
+    display: none; /* Hide logout on smaller screens, can move to header */
+  }
+  .main-content {
+    padding: 1.5rem;
+  }
   .app-title {
-    font-size: 2.8em;
-    color: #2c3e50; /* Dark blue/grey for professionalism */
-    margin-bottom: 50px;
-    text-align: center;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
+    font-size: 2.2rem;
+    margin-bottom: 40px;
   }
-  
-  /* Login Form Container */
+}
+
+@media (max-width: 768px) {
   .login-form-container {
-    background-color: #ffffff;
-    padding: 40px;
-    border-radius: 10px; /* Slightly more rounded corners */
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); /* More prominent shadow */
-    width: 100%;
-    max-width: 420px; /* Slightly wider form */
-    text-align: center;
-    box-sizing: border-box;
-    border: 1px solid #e0e0e0; /* Subtle border */
+    padding: 30px;
+    max-width: 380px;
   }
-  
   .login-form-container h2 {
-    font-size: 2em;
-    color: #34495e;
-    margin-bottom: 35px;
-    font-weight: 500;
+    font-size: 1.8rem;
+    margin-bottom: 30px;
   }
-  
-  /* Form Group (Label + Input) */
-  .form-group {
-    margin-bottom: 25px; /* More spacing between fields */
-    text-align: left;
+  .app-title {
+    font-size: 2rem;
   }
-  
-  .form-group label {
-    display: block;
-    margin-bottom: 10px; /* Spacing between label and input */
-    font-weight: bold;
-    color: #555;
-    font-size: 0.95em;
+}
+
+@media (max-width: 576px) { /* Mobile */
+  .sidebar {
+    flex-direction: column; /* Stack logo and nav items again */
+    align-items: flex-start;
   }
-  
-  .form-group input {
-    width: calc(100% - 24px); /* Account for padding and border */
-    padding: 12px; /* More padding */
-    border: 1px solid #ccc; /* Lighter border */
-    border-radius: 6px; /* Slightly more rounded inputs */
-    font-size: 1em;
-    box-sizing: border-box;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  .sidebar-nav ul {
+    flex-direction: column; /* Stack nav items vertically */
   }
-  
-  .form-group input:focus {
-    border-color: #007bff; /* Primary brand color on focus */
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2); /* Soft blue glow */
-  }
-  
-  /* Error Message */
-  .error-message {
-    color: #dc3545; /* Standard red for errors */
-    margin-top: 20px;
-    font-size: 0.9em;
-    text-align: center;
-    background-color: #ffeaea; /* Light red background for message */
-    border: 1px solid #dc3545;
-    border-radius: 5px;
-    padding: 10px;
-  }
-  
-  /* Login Button */
-  .login-form-container button {
-    background-color: #007bff; /* Primary blue button */
-    color: white;
-    padding: 14px 25px; /* More padding */
-    border: none;
-    border-radius: 7px; /* More rounded button */
-    font-size: 1.15em; /* Slightly larger font */
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.1s ease;
+  .sidebar-nav li {
     width: 100%;
-    margin-top: 30px;
-    font-weight: 600;
-    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.2); /* Subtle button shadow */
   }
-  
-  .login-form-container button:hover:not(:disabled) {
-    background-color: #0056b3; /* Darker blue on hover */
-    transform: translateY(-2px); /* Slight lift effect */
-    box-shadow: 0 6px 15px rgba(0, 123, 255, 0.3);
+  .app-title {
+    font-size: 1.5rem;
+    margin-bottom: 25px;
   }
-  
-  .login-form-container button:active:not(:disabled) {
-    transform: translateY(0); /* Press effect */
-    box-shadow: 0 2px 5px rgba(0, 123, 255, 0.2);
+  .login-form-container {
+    padding: 25px;
+    margin: 0 15px;
   }
-  
-  .login-form-container button:disabled {
-    background-color: #cccccc; /* Lighter grey for disabled */
-    cursor: not-allowed;
-    box-shadow: none;
-    transform: none;
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: calc(100% - 1.2rem);
+    padding: 0.5rem 0.6rem;
   }
-  
-  /* Responsive Adjustments */
-  @media (max-width: 768px) {
-    .app-title {
-      font-size: 2.2em;
-      margin-bottom: 40px;
-    }
-  
-    .login-form-container {
-      padding: 30px;
-      max-width: 380px;
-    }
-  
-    .login-form-container h2 {
-      font-size: 1.8em;
-      margin-bottom: 30px;
-    }
+  button {
+    padding: 0.6rem 1rem;
+    font-size: 0.95rem;
   }
-  
-  @media (max-width: 480px) {
-    .app-title {
-      font-size: 1.8em;
-      margin-bottom: 30px;
-    }
-  
-    .login-form-container {
-      padding: 25px;
-      margin: 0 20px; /* Add some side margin for very small screens */
-      max-width: none; /* Allow it to take up more width on small screens */
-    }
-  
-    .login-form-container h2 {
-      font-size: 1.5em;
-      margin-bottom: 25px;
-    }
-  
-    .form-group input {
-      padding: 10px;
-    }
-  
-    .login-form-container button {
-      padding: 12px 20px;
-      font-size: 1.05em;
-    }
-  }
+}
