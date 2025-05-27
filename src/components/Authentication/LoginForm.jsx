@@ -1,7 +1,6 @@
-// src/components/Authentication/LoginForm.jsx
 import React, { useState } from 'react';
-import { useAuth } from './components/context/AuthContext'; // Import useAuth
-import { useNavigate } from 'react-router-dom'; // Import useNavigate hook
+import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 function LoginForm() {
   const [email, setEmail] = useState('');
@@ -9,21 +8,19 @@ function LoginForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { login } = useAuth(); // Get the login function from AuthContext
-  const navigate = useNavigate(); // Initialize navigate hook
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
-  const handnleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); // Clear previous errors
+    setError('');
     setLoading(true);
 
-    // Call the login function from AuthContext
     const success = await login(email, password);
 
     if (success) {
       console.log('Login successful, navigating to dashboard...');
-      // Navigate to the dashboard or a default authenticated route
-      navigate('/dashboard', { replace: true }); // Use replace to prevent back navigation to login
+      navigate('/dashboard', { replace: true });
     } else {
       setError('Invalid email or password. Please try again.');
       console.warn('Login failed for', email);
@@ -54,7 +51,7 @@ function LoginForm() {
             id="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="********"
+            placeholder="admin123"
             required
             disabled={loading}
           />

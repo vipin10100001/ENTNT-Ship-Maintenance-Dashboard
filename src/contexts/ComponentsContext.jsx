@@ -2,7 +2,7 @@
 // This file will manage the state and operations for ship components.
 // It will utilize localStorageUtils for data persistence.
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getAllComponents, saveComponents } from '../utils/localStorageUtils';
+import { getAllComponents, saveComponents } from '../components/utils/localStorageUtils';
 
 const ComponentsContext = createContext(null);
 

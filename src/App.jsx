@@ -2,28 +2,24 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
-import { AuthProvider, useAuth } from '/src/components/contexts/AuthContext'; // THIS IMPORT IS KEY
-// import DashboardPage from './pages/DashboardPage'; // Will be uncommented later
+import DashboardPage from './pages/DashboardPage'; // <--- IMPORT DASHBOARD PAGE
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 
 // ProtectedRoute component to guard routes (simple version)
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { currentUser, loadingAuth, hasRole } = useAuth();
 
   if (loadingAuth) {
-    // Optionally render a loading spinner or splash screen here
     return <div>Loading application...</div>;
   }
 
   if (!currentUser) {
-    // Redirect to login if no user is authenticated
     return <Navigate to="/login" replace />;
   }
 
-  // If roles are specified, check if the user has one of them
   if (allowedRoles && !hasRole(allowedRoles)) {
-    // Optionally redirect to an unauthorized page or dashboard
     console.warn(`User ${currentUser.email} (${currentUser.role}) not authorized for this page.`);
-    return <Navigate to="/dashboard" replace />; // Redirect to dashboard or an access denied page
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;
@@ -31,23 +27,19 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
 
 function AppContent() {
-  const { currentUser, loadingAuth } = useAuth(); // Access auth state
-
-  // This will be used to determine the initial redirect
+  const { currentUser, loadingAuth } = useAuth();
   const isAuthenticated = !!currentUser;
 
   if (loadingAuth) {
-    return <div>Loading authentication...</div>; // Or a more complex loading UI
+    return <div>Loading authentication...</div>;
   }
 
   return (
     <div className="app-container">
       <Routes>
-        {/* Public route for Login */}
         <Route path="/login" element={<LoginPage />} />
 
-        {/* Protected routes (example structure) */}
-        {/*
+        {/* Protected dashboard route (UNCOMMENT THIS) */}
         <Route
           path="/dashboard"
           element={
@@ -56,7 +48,6 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-        */}
 
         {/* Redirect based on authentication status */}
         <Route
@@ -64,7 +55,7 @@ function AppContent() {
           element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />}
         />
 
-        {/* Catch-all for undefined routes, redirects to login */}
+        {/* Catch-all for undefined routes */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </div>
@@ -74,7 +65,7 @@ function AppContent() {
 function App() {
   return (
     <Router>
-      <AuthProvider> {/* Wrap the whole app content with AuthProvider */}
+      <AuthProvider>
         <AppContent />
       </AuthProvider>
     </Router>

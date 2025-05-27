@@ -1,6 +1,6 @@
 // src/contexts/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { saveCurrentUser, loadCurrentUser, removeCurrentUser, getAllUsers } from '../utils/localStorageUtils';
+import { saveCurrentUser, loadCurrentUser, removeCurrentUser, getAllUsers } from '../components/utils/localStorageUtils';
 // No need to import useNavigate here, it's used in LoginForm.jsx
 
 const AuthContext = createContext(null);
