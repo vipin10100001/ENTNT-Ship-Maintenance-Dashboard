@@ -12,7 +12,7 @@ function LoginForm() {
   const { login } = useAuth(); // Get the login function from AuthContext
   const navigate = useNavigate(); // Initialize navigate hook
 
-  const handleSubmit = async (e) => {
+  const handnleSubmit = async (e) => {
     e.preventDefault();
     setError(''); // Clear previous errors
     setLoading(true);
