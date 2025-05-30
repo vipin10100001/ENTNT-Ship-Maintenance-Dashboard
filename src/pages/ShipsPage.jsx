@@ -1,82 +1,102 @@
 // src/pages/ShipsPage.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useShips } from '@/contexts/ShipsContext';
-// import ShipList from '@/components/Ships/ShipList'; // Uncomment when ready
-// import ShipForm from '@/components/Ships/ShipForm'; // Uncomment when ready
+import { useAuth } from '@/contexts/AuthContext'; // To check user roles
+import ShipForm from '@/components/Ships/ShipForm'; // Import the ShipForm component
+import { useNavigate } from 'react-router-dom'; // For navigating to ship detail
 
 function ShipsPage() {
-  const { ships, loadingShips, addShip, editShip, deleteShip } = useShips();
+  const { ships, loading, error, deleteShip } = useShips(); // Get deleteShip function
+  const { currentUser, hasRole } = useAuth(); // Get currentUser and hasRole
+  const navigate = useNavigate();
 
-  if (loadingShips) {
-    return <div>Loading ships...</div>;
-  }
+  const [showShipForm, setShowShipForm] = useState(false);
+  const [shipToEdit, setShipToEdit] = useState(null); // State to hold ship being edited
 
-  // Dummy functions for form actions (will be fleshed out)
-  const handleAddShip = (newShipData) => {
-    addShip(newShipData);
-    alert('Ship added (simulated)!');
+  const handleAddShipClick = () => {
+    setShipToEdit(null); // Clear any ship being edited
+    setShowShipForm(true);
   };
 
-  const handleEditShip = (id, updatedData) => {
-    editShip(id, updatedData);
-    alert('Ship updated (simulated)!');
+  const handleEditShip = (ship) => {
+    setShipToEdit(ship); // Set the ship to be edited
+    setShowShipForm(true);
   };
 
-  const handleDeleteShip = (id) => {
-    if (window.confirm('Are you sure you want to delete this ship?')) {
-      deleteShip(id);
-      alert('Ship deleted (simulated)!');
+  const handleDeleteShip = async (shipId, shipName) => {
+    if (window.confirm(`Are you sure you want to delete ship "${shipName}"? This action cannot be undone.`)) {
+      try {
+        await deleteShip(shipId);
+        alert(`Ship "${shipName}" deleted successfully!`);
+      } catch (err) {
+        alert(`Failed to delete ship "${shipName}". Error: ${err.message}`);
+      }
     }
   };
 
+  const handleCloseForm = () => {
+    setShowShipForm(false);
+    setShipToEdit(null); // Clear shipToEdit when form closes
+  };
+
+  if (loading) return <div className="loading-fullscreen">Loading ships...</div>;
+  if (error) return <div className="error-message">Error: {error}</div>;
+
   return (
-    <div className="ships-page-container">
+    <div className="ships-page">
       <div className="main-content-header">
         <h1>Ships Management</h1>
-        {/* You can add a button here to open a modal/form for adding a new ship */}
-        <button onClick={() => alert('Open add ship form')}>Add New Ship</button>
-      </div>
-
-      <div className="card">
-        <h3>Existing Ships</h3>
-        {/* <ShipList ships={ships} onEdit={handleEditShip} onDelete={handleDeleteShip} /> */}
-        {/* Temporary list without ShipList component */}
-        {ships.length === 0 ? (
-          <p>No ships found. Add one!</p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>IMO Number</th>
-                <th>Flag</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ships.map(ship => (
-                <tr key={ship.id}>
-                  <td>{ship.name}</td>
-                  <td>{ship.imo}</td>
-                  <td>{ship.flag}</td>
-                  <td>{ship.status}</td>
-                  <td>
-                    <button className="btn-secondary" onClick={() => alert(`View ${ship.name}`)}>View</button>
-                    <button className="btn-secondary" onClick={() => alert(`Edit ${ship.name}`)}>Edit</button>
-                    <button className="btn-danger" onClick={() => handleDeleteShip(ship.id)}>Delete</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {hasRole(['Admin', 'Inspector']) && ( // Only Admins and Inspectors can add/edit/delete ships
+          <button onClick={handleAddShipClick}>Add New Ship</button>
         )}
       </div>
 
-      {/* <div className="card">
-        <h3>Add/Edit Ship</h3>
-        <ShipForm onSubmit={handleAddShip} />
-      </div> */}
+      {showShipForm && (
+        <ShipForm shipToEdit={shipToEdit} onClose={handleCloseForm} />
+      )}
+
+      {!showShipForm && ( // Only show list if form is not active
+        <div className="card">
+          {ships.length > 0 ? (
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>IMO Number</th>
+                  <th>Flag</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ships.map(ship => (
+                  <tr key={ship.id}>
+                    <td onClick={() => navigate(`/ships/${ship.id}`)} style={{ cursor: 'pointer', fontWeight: 'bold', color: 'var(--primary-blue)' }}>
+                      {ship.name}
+                    </td>
+                    <td>{ship.imo}</td>
+                    <td>{ship.flag}</td>
+                    <td>{ship.status}</td>
+                    <td>
+                      {hasRole(['Admin', 'Inspector']) && (
+                        <>
+                          <button onClick={() => handleEditShip(ship)} className="btn-secondary" style={{ marginRight: '10px' }}>Edit</button>
+                          <button onClick={() => handleDeleteShip(ship.id, ship.name)} className="btn-danger">Delete</button>
+                        </>
+                      )}
+                      {!hasRole(['Admin', 'Inspector']) && ( // For Engineers or other roles, only view
+                         <button onClick={() => navigate(`/ships/${ship.id}`)} className="btn-secondary">View</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p>No ships registered yet. {hasRole(['Admin', 'Inspector']) && 'Click "Add New Ship" to get started.'}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,137 +1,191 @@
 // src/pages/JobsPage.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useJobs } from '@/contexts/JobsContext';
-// import JobForm from '@/components/Jobs/JobForm'; // Uncomment when ready
-// import JobList from '@/components/Jobs/JobList'; // Uncomment when ready
+import { useShips } from '@/contexts/ShipsContext';
+import { useComponents } from '@/contexts/ComponentsContext';
+import { useAuth } from '@/contexts/AuthContext';
+import JobForm from '@/components/Jobs/JobForm';
+// If you have TimeAgo, keep this import. If not, remove it.
+// import TimeAgo from '@/components/TimeAgo'; // Removed import from previous turn, just a reminder
 
 function JobsPage() {
-  const { jobs, loadingJobs, addJob, updateJobStatus, editJob } = useJobs();
+  const { jobs, loading: loadingJobs, error: errorJobs, deleteJob } = useJobs();
+  // CORRECTED: Destructure errorShips from useShips
+  const { ships, loading: loadingShips, error: errorShips } = useShips();
+  const { components, loading: loadingComponents, error: errorComponents } = useComponents();
+  // CORRECTED: Destructure errorUsers from useAuth
+  const { users: allUsers, loading: loadingUsers, hasRole, error: errorUsers } = useAuth();
+
+  const [showJobForm, setShowJobForm] = useState(false);
+  const [jobToEdit, setJobToEdit] = useState(null);
+
   const [filterShipId, setFilterShipId] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterPriority, setFilterPriority] = useState('');
 
-  // Dummy options for filters (will come from ShipsContext, etc. later)
-  const mockShips = [{ id: 's1', name: 'Ever Given' }, { id: 's2', name: 'Maersk Alabama' }];
-  const jobStatuses = ['Open', 'In Progress', 'Completed', 'Cancelled'];
-  const jobPriorities = ['High', 'Medium', 'Low'];
-
-
   const filteredJobs = jobs.filter(job => {
-    const matchesShip = filterShipId ? job.shipId === filterShipId : true;
-    const matchesStatus = filterStatus ? job.status === filterStatus : true;
-    const matchesPriority = filterPriority ? job.priority === filterPriority : true;
-    return matchesShip && matchesStatus && matchesPriority;
-  });
+    if (filterShipId && job.shipId !== filterShipId) {
+      return false;
+    }
+    if (filterStatus && job.status !== filterStatus) {
+      return false;
+    }
+    if (filterPriority && job.priority !== filterPriority) {
+      return false;
+    }
+    return true;
+  }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-  const handleAddJob = (newJobData) => {
-    addJob(newJobData);
-    alert('Job created (simulated)!');
-  };
-
-  const handleUpdateJobStatus = (jobId, newStatus) => {
-    updateJobStatus(jobId, newStatus);
-    alert(`Job ${jobId} status updated to ${newStatus} (simulated)!`);
+  const handleCreateJobClick = () => {
+    setJobToEdit(null);
+    setShowJobForm(true);
   };
 
   const handleEditJob = (job) => {
-    alert(`Editing job: ${job.type}`);
-    // In a real app, this would open a form/modal
+    setJobToEdit(job);
+    setShowJobForm(true);
   };
 
-  const handleDeleteJob = (jobId) => {
-    if (window.confirm('Are you sure you want to delete this job?')) {
-      // Assuming you'd add a deleteJob function to JobsContext
-      alert(`Job ${jobId} deleted (simulated)!`);
+  const handleDeleteJob = async (jobId, jobDescription) => {
+    if (window.confirm(`Are you sure you want to delete job "${jobDescription}"? This action cannot be undone.`)) {
+      try {
+        await deleteJob(jobId);
+        alert(`Job "${jobDescription}" deleted successfully!`);
+      } catch (err) {
+        alert(`Failed to delete job "${jobDescription}". Error: ${err.message}`);
+      }
     }
   };
 
+  const handleCloseForm = () => {
+    setShowJobForm(false);
+    setJobToEdit(null);
+  };
 
-  if (loadingJobs) {
-    return <div className="loading-state">Loading jobs...</div>;
+  const getShipName = (shipId) => {
+    const ship = ships.find(s => s.id === shipId);
+    return ship ? ship.name : 'Unknown Ship';
+  };
+
+  const getComponentName = (componentId) => {
+    const component = components.find(c => c.id === componentId);
+    return component ? `${component.name} (${component.serialNumber})` : 'N/A';
+  };
+
+  const getEngineerEmail = (engineerId) => {
+    const engineer = allUsers.find(u => u.id === engineerId && u.role === 'Engineer');
+    return engineer ? engineer.email : 'Unassigned';
+  };
+
+  if (loadingJobs || loadingShips || loadingComponents || loadingUsers) {
+    return <div className="loading-fullscreen">Loading jobs...</div>;
+  }
+  // CORRECTED: All error variables are now correctly destructured and used
+  if (errorJobs || errorShips || errorComponents || errorUsers) {
+    return <div className="error-message">Error loading data: {errorJobs || errorShips || errorComponents || errorUsers}</div>;
   }
 
   return (
-    <div className="jobs-page-container">
+    <div className="jobs-page">
       <div className="main-content-header">
         <h1>Maintenance Jobs</h1>
-        <button onClick={() => alert('Open create job form')}>Create New Job</button>
-      </div>
-
-      <div className="card filters-card">
-        <h3>Filter Jobs</h3>
-        <div className="filter-group">
-          <label htmlFor="filterShip">Ship:</label>
-          <select id="filterShip" value={filterShipId} onChange={(e) => setFilterShipId(e.target.value)}>
-            <option value="">All Ships</option>
-            {mockShips.map(ship => <option key={ship.id} value={ship.id}>{ship.name}</option>)}
-          </select>
-        </div>
-        <div className="filter-group">
-          <label htmlFor="filterStatus">Status:</label>
-          <select id="filterStatus" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-            <option value="">All Statuses</option>
-            {jobStatuses.map(status => <option key={status} value={status}>{status}</option>)}
-          </select>
-        </div>
-        <div className="filter-group">
-          <label htmlFor="filterPriority">Priority:</label>
-          <select id="filterPriority" value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
-            <option value="">All Priorities</option>
-            {jobPriorities.map(priority => <option key={priority} value={priority}>{priority}</option>)}
-          </select>
-        </div>
-      </div>
-
-      <div className="card job-list-card">
-        <h3>Filtered Jobs ({filteredJobs.length})</h3>
-        {/* <JobList jobs={filteredJobs} onUpdateStatus={handleUpdateJobStatus} onEdit={handleEditJob} onDelete={handleDeleteJob} /> */}
-        {filteredJobs.length === 0 ? (
-          <p>No jobs match your filters.</p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Job ID</th>
-                <th>Component</th> {/* Will fetch component name */}
-                <th>Ship</th> {/* Will fetch ship name */}
-                <th>Type</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Assigned</th> {/* Will fetch engineer name */}
-                <th>Scheduled Date</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredJobs.map(job => (
-                <tr key={job.id}>
-                  <td>{job.id}</td>
-                  <td>{job.componentId}</td> {/* Replace with name later */}
-                  <td>{job.shipId}</td> {/* Replace with name later */}
-                  <td>{job.type}</td>
-                  <td>{job.priority}</td>
-                  <td>
-                    <select value={job.status} onChange={(e) => handleUpdateJobStatus(job.id, e.target.value)}>
-                      {jobStatuses.map(status => <option key={status} value={status}>{status}</option>)}
-                    </select>
-                  </td>
-                  <td>{job.assignedEngineerld}</td> {/* Replace with name later */}
-                  <td>{job.scheduledDate}</td>
-                  <td>
-                    <button className="btn-secondary" onClick={() => handleEditJob(job)}>Edit</button>
-                    <button className="btn-danger" onClick={() => handleDeleteJob(job.id)}>Delete</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {hasRole(['Admin', 'Inspector']) && (
+          <button onClick={handleCreateJobClick}>Create New Job</button>
         )}
       </div>
 
-      {/* <div className="card">
-        <h3>Create/Edit Job</h3>
-        <JobForm onSubmit={handleAddJob} />
-      </div> */}
+      {showJobForm && (
+        <JobForm jobToEdit={jobToEdit} onClose={handleCloseForm} />
+      )}
+
+      {!showJobForm && (
+        <>
+          <div className="card filters-section">
+            <h2>Filters</h2>
+            <div className="form-group">
+              <label htmlFor="filterShip">Filter by Ship:</label>
+              <select id="filterShip" value={filterShipId} onChange={(e) => setFilterShipId(e.target.value)}>
+                <option value="">All Ships</option>
+                {ships.map(ship => (
+                  <option key={ship.id} value={ship.id}>{ship.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label htmlFor="filterStatus">Filter by Status:</label>
+              <select id="filterStatus" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                <option value="">All Statuses</option>
+                <option value="Open">Open</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Pending">Pending</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label htmlFor="filterPriority">Filter by Priority:</label>
+              <select id="filterPriority" value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
+                <option value="">All Priorities</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="card job-list-section">
+            <h2>Job List</h2>
+            {filteredJobs.length > 0 ? (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Job ID</th>
+                    <th>Ship</th>
+                    <th>Component</th>
+                    <th>Type</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Assigned To</th>
+                    <th>Scheduled Date</th>
+                    <th>Last Update</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredJobs.map(job => (
+                    <tr key={job.id}>
+                      <td>{job.id.substring(0, 6)}...</td>
+                      <td>{getShipName(job.shipId)}</td>
+                      <td>{getComponentName(job.componentId)}</td>
+                      <td>{job.type}</td>
+                      <td>{job.priority}</td>
+                      <td>{job.status}</td>
+                      <td>{getEngineerEmail(job.assignedEngineerId)}</td>
+                      <td>{job.scheduledDate}</td>
+                      {/* Using TimeAgo, otherwise just display job.updatedAt or job.createdAt */}
+                      <td>{job.updatedAt || job.createdAt || 'N/A'}</td>
+                      <td>
+                        {hasRole(['Admin', 'Engineer']) && (
+                          <>
+                            <button onClick={() => handleEditJob(job)} className="btn-secondary" style={{ marginRight: '10px' }}>Edit</button>
+                            <button onClick={() => handleDeleteJob(job.id, job.description)} className="btn-danger">Delete</button>
+                          </>
+                        )}
+                        {!hasRole(['Admin', 'Engineer']) && (
+                          <button className="btn-secondary" onClick={() => {/* navigate to job detail */ alert('View job detail not implemented yet!');}}>View</button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p>No jobs found matching your criteria. {hasRole(['Admin', 'Inspector']) && 'Click "Create New Job" to add one.'}</p>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

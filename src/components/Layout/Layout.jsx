@@ -1,15 +1,16 @@
 // src/components/Layout/Layout.jsx
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext'; // Assuming AuthContext is needed for logout
+// IMPORT Outlet from react-router-dom
+import { NavLink, useNavigate, Outlet } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
-function Layout({ children }) { // Accepts children prop
-  const { logout } = useAuth(); // Destructure logout from useAuth
+function Layout() { // No longer needs to accept { children } as a prop for this App.jsx setup
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    logout(); // Call the logout function from AuthContext
-    navigate('/login'); // Redirect to login page after logout
+    logout();
+    navigate('/login');
   };
 
   return (
@@ -46,7 +47,8 @@ function Layout({ children }) { // Accepts children prop
 
       {/* Main Content Area */}
       <main className="main-content">
-        {children} {/* This is where DashboardPage, ShipsPage, etc., will be rendered */}
+        {/* RENDER THE OUTLET FOR NESTED ROUTES HERE */}
+        <Outlet /> 
       </main>
     </div>
   );

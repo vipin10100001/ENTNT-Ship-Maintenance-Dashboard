@@ -1,78 +1,105 @@
 // src/contexts/JobsContext.jsx
-// This file will manage the state and operations for maintenance jobs.
-// It will utilize localStorageUtils for data persistence.
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getAllJobs, saveJobs } from '../utils/localStorageUtils';
+import { getAllJobs, saveJobs, generateUniqueId, getAllUsers } from '../utils/localStorageUtils'; // Import getAllUsers to get engineers
 
 const JobsContext = createContext(null);
 
 export const JobsProvider = ({ children }) => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  // Load jobs on initial mount
   useEffect(() => {
-    const loadData = async () => {
-      const storedJobs = await getAllJobs();
-      setJobs(storedJobs);
-      setLoading(false);
+    const loadJobs = async () => {
+      try {
+        setLoading(true);
+        const storedJobs = await getAllJobs();
+        setJobs(storedJobs);
+      } catch (err) {
+        console.error("Failed to load jobs:", err);
+        setError("Failed to load jobs.");
+      } finally {
+        setLoading(false);
+      }
     };
-    loadData();
+    loadJobs();
   }, []);
 
-  const addJob = async (jobData) => {
-    const newJob = { id: `j${Date.now()}`, ...jobData }; // Generate unique ID
-    const updatedJobs = [...jobs, newJob];
-    setJobs(updatedJobs);
-    await saveJobs(updatedJobs); // Persist to storage [cite: 17]
-    // Trigger notification: Job Created [cite: 14]
-    return newJob;
+  // Function to add a new job
+  const addJob = async (newJobData) => {
+    try {
+      setLoading(true);
+      const newJob = {
+        id: generateUniqueId('j'), // Generate a unique ID, e.g., 'j12345'
+        // Ensure newJobData includes componentId, shipId, type, priority, status, assignedEngineerId, scheduledDate
+        ...newJobData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      const updatedJobs = [...jobs, newJob];
+      await saveJobs(updatedJobs); // Save to local storage
+      setJobs(updatedJobs); // Update state
+      return newJob;
+    } catch (err) {
+      console.error("Error adding job:", err);
+      setError("Failed to add job.");
+      throw err; // Re-throw to be caught by component
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updateJobStatus = async (id, newStatus) => {
-    const updatedJobs = jobs.map((job) =>
-      job.id === id ? { ...job, status: newStatus } : job
-    );
-    setJobs(updatedJobs);
-    await saveJobs(updatedJobs); // Persist to storage [cite: 12, 17]
-    // Trigger notification: Job Updated [cite: 14]
-    return updatedJobs.find(job => job.id === id);
+  // Function to update an existing job
+  const updateJob = async (updatedJobData) => {
+    try {
+      setLoading(true);
+      const updatedJobs = jobs.map(job =>
+        job.id === updatedJobData.id ? { ...updatedJobData, updatedAt: new Date().toISOString() } : job
+      );
+      await saveJobs(updatedJobs);
+      setJobs(updatedJobs);
+      return updatedJobData;
+    } catch (err) {
+      console.error("Error updating job:", err);
+      setError("Failed to update job.");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const editJob = async (id, updatedData) => {
-    const updatedJobs = jobs.map((job) =>
-      job.id === id ? { ...job, ...updatedData } : job
-    );
-    setJobs(updatedJobs);
-    await saveJobs(updatedJobs); // Persist to storage [cite: 17]
-    // Trigger notification: Job Updated (or Completed if status changes to complete) [cite: 14]
-    return updatedJobs.find(job => job.id === id);
+  // Function to delete a job
+  const deleteJob = async (jobId) => {
+    try {
+      setLoading(true);
+      const updatedJobs = jobs.filter(job => job.id !== jobId);
+      await saveJobs(updatedJobs);
+      setJobs(updatedJobs);
+      return true;
+    } catch (err) {
+      console.error("Error deleting job:", err);
+      setError("Failed to delete job.");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // Helper to get jobs for a specific ship
   const getJobsByShipId = (shipId) => {
     return jobs.filter(job => job.shipId === shipId);
   };
 
-  const getJobById = (id) => {
-    return jobs.find(job => job.id === id);
-  };
-
-  const filterAndGetJobs = (shipId, status, priority) => { 
-    let filtered = jobs;
-    if (shipId) filtered = filtered.filter(job => job.shipId === shipId);
-    if (status) filtered = filtered.filter(job => job.status === status);
-    if (priority) filtered = filtered.filter(job => job.priority === priority);
-    return filtered;
-  };
-
   const value = {
     jobs,
+    loading,
+    error,
     addJob,
-    updateJobStatus,
-    editJob,
-    getJobsByShipId,
-    getJobById,
-    filterAndGetJobs,
-    loadingJobs: loading,
+    updateJob,
+    deleteJob,
+    getJobById: (id) => jobs.find(job => job.id === id),
+    getJobsByShipId, // Expose the helper
   };
 
   return <JobsContext.Provider value={value}>{children}</JobsContext.Provider>;

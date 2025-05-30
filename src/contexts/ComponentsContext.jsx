@@ -1,63 +1,60 @@
 // src/contexts/ComponentsContext.jsx
-// This file will manage the state and operations for ship components.
-// It will utilize localStorageUtils for data persistence.
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getAllComponents, saveComponents } from '@/utils/localStorageUtils';
-
+import { getAllComponents, saveComponents, generateUniqueId } from '../utils/localStorageUtils';
 const ComponentsContext = createContext(null);
 
 export const ComponentsProvider = ({ children }) => {
   const [components, setComponents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const loadData = async () => {
-      const storedComponents = await getAllComponents();
-      setComponents(storedComponents);
-      setLoading(false);
+    const loadComponents = async () => {
+      try {
+        setLoading(true);
+        const storedComponents = await getAllComponents();
+        setComponents(storedComponents);
+      } catch (err) {
+        console.error("Failed to load components:", err);
+        setError("Failed to load components.");
+      } finally {
+        setLoading(false);
+      }
     };
-    loadData();
+    loadComponents();
   }, []);
 
-  const addComponent = async (componentData) => {
-    const newComponent = { id: `c${Date.now()}`, ...componentData }; // Generate unique ID
-    const updatedComponents = [...components, newComponent];
-    setComponents(updatedComponents);
-    await saveComponents(updatedComponents); // Persist to storage
-    return newComponent;
-  };
-
-  const editComponent = async (id, updatedData) => {
-    const updatedComponents = components.map((component) =>
-      component.id === id ? { ...component, ...updatedData } : component
-    );
-    setComponents(updatedComponents);
-    await saveComponents(updatedComponents); // Persist to storage
-    return updatedComponents.find(c => c.id === id);
-  };
-
-  const deleteComponent = async (id) => {
-    const updatedComponents = components.filter((component) => component.id !== id);
-    setComponents(updatedComponents);
-    await saveComponents(updatedComponents); // Persist to storage
-  };
-
-  const getComponentsByShipId = (shipId) => {
-    return components.filter(component => component.shipId === shipId);
-  };
-
-  const getComponentById = (id) => {
-    return components.find(component => component.id === id);
+  // You will add addComponent, updateComponent, deleteComponent functions here later
+  // Example for adding:
+  const addComponent = async (newComponentData) => {
+    try {
+      setLoading(true);
+      const newComponent = {
+        id: generateUniqueId('c'),
+        ...newComponentData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      const updatedComponents = [...components, newComponent];
+      await saveComponents(updatedComponents);
+      setComponents(updatedComponents);
+      return newComponent;
+    } catch (err) {
+      console.error("Error adding component:", err);
+      setError("Failed to add component.");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const value = {
     components,
-    addComponent,
-    editComponent,
-    deleteComponent,
-    getComponentsByShipId,
-    getComponentById,
-    loadingComponents: loading,
+    loading,
+    error,
+    addComponent, // Expose addComponent for future use
+    getComponentById: (id) => components.find(comp => comp.id === id),
+    // You'll add updateComponent, deleteComponent, getComponentsByShipId etc. later
   };
 
   return <ComponentsContext.Provider value={value}>{children}</ComponentsContext.Provider>;

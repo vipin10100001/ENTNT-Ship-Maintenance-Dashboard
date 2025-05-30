@@ -1,93 +1,73 @@
-// src/contexts/AuthContext.jsx
+// src/contexts/AuthContext.jsx (Add this if missing to expose all users)
 import React, { createContext, useContext, useState, useEffect } from 'react';
-// FIX: Corrected import names from localStorageUtils
-import { loadCurrentUser, saveCurrentUser, removeCurrentUser, getUserByEmail, getAllUsers } from '@/utils/localStorageUtils';
-// FIX: Corrected import from roleUtils to use the specific checks
-import { isUserAdmin, isUserInspector, isUserEngineer, hasRequiredRole, USER_ROLES } from '@/utils/roleUtils';
-
+import { saveCurrentUser, loadCurrentUser, removeCurrentUser, getAllUsers, getUserByEmail } from '@/utils/localStorageUtils'; // Import getAllUsers
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
-  const [loadingAuth, setLoadingAuth] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState([]); // State to hold all users
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const loadUserFromLocalStorage = async () => {
+    const initAuth = async () => {
       try {
-        const storedUser = await loadCurrentUser(); // Use loadCurrentUser for the session
-        if (storedUser) {
-          setCurrentUser(storedUser);
-          console.log("User found in local storage: " + storedUser.email);
-        } else {
-            setCurrentUser(null);
-        }
-      } catch (error) {
-        console.error("Failed to load user from local storage:", error);
-        setCurrentUser(null);
+        const storedUser = await loadCurrentUser();
+        setCurrentUser(storedUser);
+        const allSystemUsers = await getAllUsers(); // Load all users
+        setUsers(allSystemUsers);
+      } catch (err) {
+        console.error("Failed to initialize auth or load users:", err);
+        setError("Authentication initialization failed.");
       } finally {
-        setLoadingAuth(false);
+        setLoading(false);
       }
     };
-
-    loadUserFromLocalStorage();
+    initAuth();
   }, []);
 
   const login = async (email, password) => {
-    setLoadingAuth(true); // Indicate login process start
+    setError(null);
     try {
-      const users = await getAllUsers(); // Get all mock users to find match
-      const user = users.find(
-        (u) => u.email === email && u.password === password
-      );
-
+      const allSystemUsers = await getAllUsers(); // Get all users again for login check
+      const user = allSystemUsers.find(u => u.email === email && u.password === password);
       if (user) {
+        await saveCurrentUser(user);
         setCurrentUser(user);
-        await saveCurrentUser(user); // Save the logged-in user to current session
-        console.log('Login successful for:', user.email);
-        return true; // Indicate successful login
+        return true;
       } else {
-        console.warn('Login failed: Invalid credentials for', email);
-        return false; // Indicate failed login
+        return false;
       }
-    } catch (error) {
-      console.error('Error during login:', error);
+    } catch (err) {
+      console.error("Login failed:", err);
+      setError("Login failed due to an error.");
       return false;
-    } finally {
-        setLoadingAuth(false); // Indicate login process end
     }
   };
 
-
   const logout = async () => {
-    setLoadingAuth(true); // Indicate logout process start
-    try {
-      setCurrentUser(null);
-      await removeCurrentUser(); // Remove current user from local storage
-      console.log('User logged out.');
-    } catch (error) {
-      console.error('Error during logout:', error);
-    } finally {
-      setLoadingAuth(false); // Indicate logout process end
-    }
+    await removeCurrentUser();
+    setCurrentUser(null);
   };
 
   const hasRole = (roles) => {
-    // FIX: Using the hasRequiredRole from roleUtils for consistency and flexibility
-    return hasRequiredRole(currentUser, roles);
+    if (!currentUser) return false;
+    if (Array.isArray(roles)) {
+      return roles.includes(currentUser.role);
+    }
+    return currentUser.role === roles;
   };
-
 
   const value = {
     currentUser,
+    users, // Expose all users
+    loading,
+    error,
     login,
     logout,
-    loadingAuth,
     hasRole,
-    // You can also expose specific role checks if needed, but hasRole is more generic
-    isUserAdmin: (user) => isUserAdmin(user || currentUser),
-    isUserInspector: (user) => isUserInspector(user || currentUser),
-    isUserEngineer: (user) => isUserEngineer(user || currentUser),
+    getUserById: (id) => users.find(user => user.id === id), // Helper to get user by ID
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -23,6 +23,12 @@ const MOCK_DATA = {
   ]
 };
 
+// Helper function to generate a unique ID
+export const generateUniqueId = (prefix = '') => {
+  return `${prefix}${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+};
+
+
 export const initializeMockData = async () => {
   try {
     const users = await localforage.getItem(`${LOCAL_STORAGE_PREFIX}users`);
