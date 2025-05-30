@@ -5,15 +5,12 @@ import { useShips } from '@/contexts/ShipsContext';
 import { useComponents } from '@/contexts/ComponentsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import JobForm from '@/components/Jobs/JobForm';
-// If you have TimeAgo, keep this import. If not, remove it.
-// import TimeAgo from '@/components/TimeAgo'; // Removed import from previous turn, just a reminder
+import TimeAgo from '@/components/TimeAgo'; // Assuming you have this now
 
 function JobsPage() {
   const { jobs, loading: loadingJobs, error: errorJobs, deleteJob } = useJobs();
-  // CORRECTED: Destructure errorShips from useShips
   const { ships, loading: loadingShips, error: errorShips } = useShips();
   const { components, loading: loadingComponents, error: errorComponents } = useComponents();
-  // CORRECTED: Destructure errorUsers from useAuth
   const { users: allUsers, loading: loadingUsers, hasRole, error: errorUsers } = useAuth();
 
   const [showJobForm, setShowJobForm] = useState(false);
@@ -46,8 +43,11 @@ function JobsPage() {
     setShowJobForm(true);
   };
 
-  const handleDeleteJob = async (jobId, jobDescription) => {
-    if (window.confirm(`Are you sure you want to delete job "${jobDescription}"? This action cannot be undone.`)) {
+  const handleDeleteJob = async (jobId, jobDescription, shipId, componentId) => {
+    const shipName = getShipName(shipId);
+    const componentName = getComponentName(componentId);
+
+    if (window.confirm(`Are you sure you want to delete job "${jobDescription}" for ship "${shipName}" component "${componentName}"? This action cannot be undone.`)) {
       try {
         await deleteJob(jobId);
         alert(`Job "${jobDescription}" deleted successfully!`);
@@ -80,7 +80,6 @@ function JobsPage() {
   if (loadingJobs || loadingShips || loadingComponents || loadingUsers) {
     return <div className="loading-fullscreen">Loading jobs...</div>;
   }
-  // CORRECTED: All error variables are now correctly destructured and used
   if (errorJobs || errorShips || errorComponents || errorUsers) {
     return <div className="error-message">Error loading data: {errorJobs || errorShips || errorComponents || errorUsers}</div>;
   }
@@ -137,49 +136,52 @@ function JobsPage() {
           <div className="card job-list-section">
             <h2>Job List</h2>
             {filteredJobs.length > 0 ? (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Job ID</th>
-                    <th>Ship</th>
-                    <th>Component</th>
-                    <th>Type</th>
-                    <th>Priority</th>
-                    <th>Status</th>
-                    <th>Assigned To</th>
-                    <th>Scheduled Date</th>
-                    <th>Last Update</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredJobs.map(job => (
-                    <tr key={job.id}>
-                      <td>{job.id.substring(0, 6)}...</td>
-                      <td>{getShipName(job.shipId)}</td>
-                      <td>{getComponentName(job.componentId)}</td>
-                      <td>{job.type}</td>
-                      <td>{job.priority}</td>
-                      <td>{job.status}</td>
-                      <td>{getEngineerEmail(job.assignedEngineerId)}</td>
-                      <td>{job.scheduledDate}</td>
-                      {/* Using TimeAgo, otherwise just display job.updatedAt or job.createdAt */}
-                      <td>{job.updatedAt || job.createdAt || 'N/A'}</td>
-                      <td>
-                        {hasRole(['Admin', 'Engineer']) && (
-                          <>
-                            <button onClick={() => handleEditJob(job)} className="btn-secondary" style={{ marginRight: '10px' }}>Edit</button>
-                            <button onClick={() => handleDeleteJob(job.id, job.description)} className="btn-danger">Delete</button>
-                          </>
-                        )}
-                        {!hasRole(['Admin', 'Engineer']) && (
-                          <button className="btn-secondary" onClick={() => {/* navigate to job detail */ alert('View job detail not implemented yet!');}}>View</button>
-                        )}
-                      </td>
+              // >>> THIS IS THE ADDED WRAPPER <<<
+              <div className="table-responsive">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Job ID</th>
+                      <th>Ship</th>
+                      <th>Component</th>
+                      <th>Type</th>
+                      <th>Priority</th>
+                      <th>Status</th>
+                      <th>Assigned To</th>
+                      <th>Scheduled Date</th>
+                      <th>Last Update</th>
+                      <th>Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {filteredJobs.map(job => (
+                      <tr key={job.id}>
+                        <td>{job.id.substring(0, 6)}...</td>
+                        <td>{getShipName(job.shipId)}</td>
+                        <td>{getComponentName(job.componentId)}</td>
+                        <td>{job.type}</td>
+                        <td>{job.priority}</td>
+                        <td>{job.status}</td>
+                        <td>{getEngineerEmail(job.assignedEngineerId)}</td>
+                        <td>{job.scheduledDate}</td>
+                        <td><TimeAgo date={job.updatedAt || job.createdAt} /></td>
+                        <td>
+                          {hasRole(['Admin', 'Engineer']) && (
+                            <>
+                              <button onClick={() => handleEditJob(job)} className="btn-secondary" style={{ marginRight: '10px' }}>Edit</button>
+                              <button onClick={() => handleDeleteJob(job.id, job.description, job.shipId, job.componentId)} className="btn-danger">Delete</button>
+                            </>
+                          )}
+                          {!hasRole(['Admin', 'Engineer']) && (
+                            <button className="btn-secondary" onClick={() => {/* navigate to job detail */ alert('View job detail not implemented yet!');}}>View</button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              // >>> END OF ADDED WRAPPER <<<
             ) : (
               <p>No jobs found matching your criteria. {hasRole(['Admin', 'Inspector']) && 'Click "Create New Job" to add one.'}</p>
             )}
