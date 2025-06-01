@@ -1,9 +1,9 @@
 // src/components/Dashboard/KPICards.jsx
-// This component will display key performance indicator cards. [cite: 15, 16]
+//display key performance indicator cards.
 import React from 'react';
 
 function KPICards() {
-  // Dummy data for now; will be calculated from contexts later
+  
   const totalShips = 0;
   const overdueMaintenance = 0;
   const jobsInProgress = 0;

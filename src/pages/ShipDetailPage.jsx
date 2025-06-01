@@ -1,24 +1,32 @@
 // src/pages/ShipDetailPage.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useShips } from '@/contexts/ShipsContext';
-import { useComponents } from '@/contexts/ComponentsContext';
-import { useJobs } from '@/contexts/JobsContext';
-import { useAuth } from '@/contexts/AuthContext';       // For hasRole
+import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications } from '@/contexts/NotificationContext';
+import TimeAgo from '@/components/TimeAgo';
+
+// Import API functions
+import { getShipDetails, getComponentsByShipId } from '@/api/shipApi'; // getShipDetails, getComponentsByShipId
+import { addComponent, updateComponent, deleteComponent } from '@/api/componentApi'; // ADDED: Imports for component CRUD API
+import { deleteJob } from '@/api/jobApi';  
+import { getAllJobs } from '@/utils/localStorageUtils'; // USED to filter jobs as ShipDetailPage doesn't use JobsContext
+
+// Import your ComponentForm and JobForm directly
 import ComponentForm from '@/components/Components/ComponentForm';
 import JobForm from '@/components/Jobs/JobForm';
-import TimeAgo from '@/components/TimeAgo'; // Assuming you have this now. If not, uncomment and replace usage.
-
 
 function ShipDetailPage() {
-  const { id } = useParams();
+  const { id: shipId } = useParams(); // Destructure as shipId
   const navigate = useNavigate();
+  const { addNotification } = useNotifications();
+  const { hasRole, users: allUsers, loading: loadingAuth, error: errorAuth } = useAuth(); // Destructure allUsers for getEngineerEmail
 
-  const { ships, loading: loadingShips, error: errorShips, getShipById } = useShips();
-  const { components, loading: loadingComponents, error: errorComponents, deleteComponent } = useComponents();
-  const { jobs, loading: loadingJobs, error: errorJobs, deleteJob } = useJobs();
-  // CORRECTED LINE BELOW: Destructure allUsers, loadingAuth, and errorAuth from useAuth
-  const { hasRole, users: allUsers, loading: loadingAuth, error: errorAuth } = useAuth();
+  // State for ship data, components, jobs, loading, errors, and form visibility
+  const [ship, setShip] = useState(null);
+  const [components, setComponents] = useState([]);
+  const [jobs, setJobs] = useState([]); // State for jobs on this ship
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [showComponentForm, setShowComponentForm] = useState(false);
   const [componentToEdit, setComponentToEdit] = useState(null);
@@ -26,14 +34,53 @@ function ShipDetailPage() {
   const [showJobForm, setShowJobForm] = useState(false);
   const [jobToEdit, setJobToEdit] = useState(null);
 
-  const ship = getShipById(id);
-  const shipComponents = components.filter(comp => comp.shipId === id);
-  const shipJobs = jobs.filter(job => job.shipId === id)
-                        .sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate));
+  // --- Data Fetching Effect ---
+  useEffect(() => {
+    const fetchShipAndRelatedData = async () => {
+      if (!shipId) {
+        setError("No ship ID provided.");
+        setLoading(false);
+        return;
+      }
 
-  // Handlers for Component Form
+      setLoading(true);
+      setError(null);
+
+      try {
+        const foundShip = await getShipDetails(shipId);
+        if (!foundShip) {
+          setError("Ship not found.");
+          addNotification("Ship not found for the given ID.", 'error');
+          setLoading(false);
+          return;
+        }
+        setShip(foundShip);
+
+        const fetchedComponents = await getComponentsByShipId(shipId);
+        setComponents(fetchedComponents || []);
+
+        // Fetch all jobs, then filter by shipId
+        const allJobs = await getAllJobs(); // Get all jobs from localStorageUtils
+        const shipJobs = allJobs.filter(job => job.shipId === shipId)
+                                .sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate));
+        setJobs(shipJobs);
+
+      } catch (err) {
+        console.error("Failed to fetch ship details or components:", err);
+        setError("Failed to load ship details or components. Please try again.");
+        addNotification("Failed to load ship details or components.", 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchShipAndRelatedData();
+  }, [shipId, addNotification]); // Depend on shipId and addNotification
+
+
+  // --- Handlers for Component Form ---
   const handleAddComponentClick = () => {
-    setComponentToEdit(null);
+    setComponentToEdit(null); // Clear any editing state for new form
     setShowComponentForm(true);
   };
 
@@ -42,43 +89,83 @@ function ShipDetailPage() {
     setShowComponentForm(true);
   };
 
-  const handleDeleteComponent = async (componentId, componentName, shipId) => {
+  const handleCloseComponentForm = () => {
+    setShowComponentForm(false);
+    setComponentToEdit(null);
+    // After closing, re-fetch components to reflect any changes made in the form
+    // (This is important since ComponentForm itself modifies data via contexts/API calls directly)
+    fetchComponentsForShip(); // Call a helper to re-fetch components
+  };
+
+  const fetchComponentsForShip = async () => {
+      try {
+          const updatedComponents = await getComponentsByShipId(shipId);
+          setComponents(updatedComponents || []);
+      } catch (err) {
+          console.error("Error re-fetching components:", err);
+          addNotification("Failed to refresh component list.", 'error');
+      }
+  };
+
+
+  const handleDeleteComponent = async (componentId, componentName, associatedShipId) => { // Added associatedShipId param
     if (window.confirm(`Are you sure you want to delete component "${componentName}" from this ship?`)) {
       try {
         await deleteComponent(componentId);
-        alert(`Component "${componentName}" deleted successfully!`);
+        addNotification(`Component "${componentName}" deleted successfully!`, 'success');
+        // Re-fetch components to update the list on the page
+        const updatedComponents = await getComponentsByShipId(associatedShipId); // Use associatedShipId
+        setComponents(updatedComponents);
       } catch (err) {
-        alert(`Failed to delete component "${componentName}". Error: ${err.message}`);
+        console.error("Failed to delete component:", err);
+        addNotification(`Failed to delete component "${componentName}". Error: ${err.message}`, 'error');
       }
     }
   };
 
-  const handleCloseComponentForm = () => {
-    setShowComponentForm(false);
-    setComponentToEdit(null);
-  };
 
-  // Handlers for Job Form
+  // --- Handlers for Job Form ---
   const handleEditJob = (job) => {
     setJobToEdit(job);
     setShowJobForm(true);
   };
 
-  const handleDeleteJob = async (jobId, jobDescription, shipId, componentId) => {
+  const handleCloseJobForm = () => {
+    setShowJobForm(false);
+    setJobToEdit(null);
+    // After closing, re-fetch jobs to reflect any changes made in the form
+    fetchJobsForShip(); // Call a helper to re-fetch jobs
+  };
+
+  const fetchJobsForShip = async () => {
+      try {
+          const allJobs = await getAllJobs();
+          const shipJobs = allJobs.filter(job => job.shipId === shipId)
+                                  .sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate));
+          setJobs(shipJobs);
+      } catch (err) {
+          console.error("Error re-fetching jobs:", err);
+          addNotification("Failed to refresh job list.", 'error');
+      }
+  };
+
+
+  const handleDeleteJob = async (jobId, jobDescription, associatedShipId, componentId) => { // Added associatedShipId, componentId params
     const componentName = components.find(c => c.id === componentId)?.name || 'N/A';
     if (window.confirm(`Are you sure you want to delete job "${jobDescription}" for component "${componentName}"? This action cannot be undone.`)) {
       try {
         await deleteJob(jobId);
-        alert(`Job "${jobDescription}" deleted successfully!`);
+        addNotification(`Job "${jobDescription}" deleted successfully!`, 'success');
+        // Re-fetch jobs to update the list on the page
+        const allJobs = await getAllJobs();
+        const shipJobs = allJobs.filter(job => job.shipId === associatedShipId)
+                                .sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate));
+        setJobs(shipJobs);
       } catch (err) {
-        alert(`Failed to delete job "${jobDescription}". Error: ${err.message}`);
+        console.error("Failed to delete job:", err);
+        addNotification(`Failed to delete job "${jobDescription}". Error: ${err.message}`, 'error');
       }
     }
-  };
-
-  const handleCloseJobForm = () => {
-    setShowJobForm(false);
-    setJobToEdit(null);
   };
 
   // Helper to get Engineer Email for Job History
@@ -87,17 +174,17 @@ function ShipDetailPage() {
     return engineer ? engineer.email : 'Unassigned';
   };
 
-  // CORRECTED: Include loadingAuth and errorAuth in checks
-  if (loadingShips || loadingComponents || loadingJobs || loadingAuth) {
+  // --- Render Logic ---
+  if (loading || loadingAuth) { // Include loadingAuth here
     return <div className="loading-fullscreen">Loading ship profile...</div>;
   }
 
-  if (errorShips || errorComponents || errorJobs || errorAuth) {
-    return <div className="error-message">Error loading ship profile: {errorShips || errorComponents || errorJobs || errorAuth}</div>;
+  if (error || errorAuth) { // Include errorAuth here
+    return <div className="error-message fullscreen">Error loading ship profile: {error || errorAuth}</div>;
   }
 
   if (!ship) {
-    return <div className="error-message">Ship not found.</div>;
+    return <div className="error-message fullscreen">Ship not found. Please check the URL.</div>;
   }
 
   return (
@@ -107,22 +194,28 @@ function ShipDetailPage() {
         <button onClick={() => navigate('/ships')} className="btn-secondary">Back to Ships</button>
       </div>
 
-      {/* Conditional Forms */}
+      {/* Conditional Forms with Overlay */}
+      {/* ComponentForm uses its own internal state and context actions.
+          It calls onClose, which then triggers a re-fetch of components for this page. */}
       {showComponentForm && (
-        <ComponentForm
-          componentToEdit={componentToEdit}
-          onClose={handleCloseComponentForm}
-          shipId={ship.id}
-        />
+        <div className="form-overlay">
+          <ComponentForm
+            componentToEdit={componentToEdit}
+            onClose={handleCloseComponentForm} // This will trigger the re-fetch
+            shipId={shipId} // Pass current shipId to pre-fill in form
+          />
+        </div>
       )}
       {showJobForm && (
-        <JobForm
-          jobToEdit={jobToEdit}
-          onClose={handleCloseJobForm}
-        />
+        <div className="form-overlay">
+          <JobForm
+            jobToEdit={jobToEdit}
+            onClose={handleCloseJobForm} // This will trigger the re-fetch
+          />
+        </div>
       )}
 
-      {/* General Information Section */}
+      {/* Main Content Sections - Only show if no forms are open */}
       {!showComponentForm && !showJobForm && (
         <>
           <div className="card general-info-section">
@@ -131,17 +224,21 @@ function ShipDetailPage() {
             <p><strong>IMO Number:</strong> {ship.imo}</p>
             <p><strong>Flag:</strong> {ship.flag}</p>
             <p><strong>Status:</strong> {ship.status}</p>
+             {/* Add more ship details like type, builtYear, owner if your ship data has them */}
+            {ship.type && <p><strong>Type:</strong> {ship.type}</p>}
+            {ship.builtYear && <p><strong>Built Year:</strong> {ship.builtYear}</p>}
+            {ship.owner && <p><strong>Owner:</strong> {ship.owner}</p>}
           </div>
 
           {/* Components Installed Section */}
           <div className="card components-installed-section">
             <div className="card-header-with-button">
               <h2>Components Installed</h2>
-              {hasRole(['Admin', 'Engineer']) && (
+              {hasRole(['Admin', 'Engineer']) && ( // Only Admins and Engineers can add components
                 <button onClick={handleAddComponentClick}>Add New Component</button>
               )}
             </div>
-            {shipComponents.length > 0 ? (
+            {components.length > 0 ? (
               <div className="table-responsive">
                 <table>
                   <thead>
@@ -154,17 +251,17 @@ function ShipDetailPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {shipComponents.map(comp => (
+                    {components.map(comp => (
                       <tr key={comp.id}>
                         <td>{comp.name}</td>
                         <td>{comp.serialNumber}</td>
-                        <td>{comp.installDate}</td>
-                        <td>{comp.lastMaintenanceDate}</td>
+                        <td>{new Date(comp.installDate).toLocaleDateString()}</td>
+                        <td>{comp.lastMaintenanceDate ? new Date(comp.lastMaintenanceDate).toLocaleDateString() : 'N/A'}</td>
                         <td>
                           {hasRole(['Admin', 'Engineer']) && (
                             <>
                               <button onClick={() => handleEditComponent(comp)} className="btn-secondary" style={{ marginRight: '10px' }}>Edit</button>
-                              <button onClick={() => handleDeleteComponent(comp.id, comp.name, comp.shipId)} className="btn-danger">Delete</button>
+                              <button onClick={() => handleDeleteComponent(comp.id, comp.name, shipId)} className="btn-danger">Delete</button>
                             </>
                           )}
                           {!hasRole(['Admin', 'Engineer']) && (
@@ -184,7 +281,7 @@ function ShipDetailPage() {
           {/* Maintenance History Section */}
           <div className="card maintenance-history-section">
             <h2>Maintenance History</h2>
-            {shipJobs.length > 0 ? (
+            {jobs.length > 0 ? ( // Use the 'jobs' state for this component
               <div className="table-responsive">
                 <table>
                   <thead>
@@ -200,7 +297,7 @@ function ShipDetailPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {shipJobs.map(job => (
+                    {jobs.map(job => (
                       <tr key={job.id}>
                         <td>{job.id.substring(0, 6)}...</td>
                         <td>{job.type}</td>
@@ -213,7 +310,7 @@ function ShipDetailPage() {
                           {hasRole(['Admin', 'Engineer']) && (
                             <>
                               <button onClick={() => handleEditJob(job)} className="btn-secondary">Edit</button>
-                              <button onClick={() => handleDeleteJob(job.id, job.description, job.shipId, job.componentId)} className="btn-danger">Delete</button>
+                              <button onClick={() => handleDeleteJob(job.id, job.description, shipId, job.componentId)} className="btn-danger">Delete</button>
                             </>
                           )}
                           {!hasRole(['Admin', 'Engineer']) && (

@@ -1,6 +1,6 @@
 // src/utils/localStorageUtils.js
 
-import localforage from 'localforage'; // Make sure localforage is installed: npm install localforage
+import localforage from 'localforage'; 
 
 const LOCAL_STORAGE_PREFIX = 'entnt_ship_dashboard_';
 
@@ -84,23 +84,6 @@ export const getUserByEmail = async (email) => {
   return users.find(user => user.email === email);
 };
 
-// This function (if needed) for saving a user to the *list* of all users
-// export const saveUser = async (user) => {
-//   const users = await getAllUsers();
-//   const updatedUsers = users.map(u => u.id === user.id ? user : u);
-//   // If user is new, add them
-//   if (!users.some(u => u.id === user.id)) {
-//     updatedUsers.push(user);
-//   }
-//   await localforage.setItem(`${LOCAL_STORAGE_PREFIX}users`, updatedUsers);
-// };
-
-// This function (if needed) for removing a user from the *list* of all users
-// export const removeUser = async (id) => {
-//   const users = await getAllUsers();
-//   const updatedUsers = users.filter(u => u.id !== id);
-//   await localforage.setItem(`${LOCAL_STORAGE_PREFIX}users`, updatedUsers);
-// };
 
 
 // --- Ship Data Management ---

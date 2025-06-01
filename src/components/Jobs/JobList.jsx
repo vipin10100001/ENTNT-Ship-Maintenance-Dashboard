@@ -1,5 +1,5 @@
 // src/components/Jobs/JobList.jsx
-// Displays a list of maintenance jobs with filtering options. [cite: 11]
+// Displays a list of maintenance jobs with filtering options. 
 import React from 'react';
 
 function JobList({ jobs, onUpdateStatus, onEdit, onDelete }) {

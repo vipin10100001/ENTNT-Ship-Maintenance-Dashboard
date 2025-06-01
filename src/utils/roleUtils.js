@@ -29,5 +29,3 @@ export const isUserAdmin = (user) => hasRequiredRole(user, USER_ROLES.ADMIN);
 export const isUserInspector = (user) => hasRequiredRole(user, USER_ROLES.INSPECTOR);
 export const isUserEngineer = (user) => hasRequiredRole(user, USER_ROLES.ENGINEER);
 
-// You can add more role-specific utilities here if needed.
-// For example, mapping roles to permissions (though simple role check is sufficient for this assignment).

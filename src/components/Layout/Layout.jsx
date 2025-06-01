@@ -1,10 +1,10 @@
 // src/components/Layout/Layout.jsx
 import React from 'react';
-// IMPORT Outlet from react-router-dom
+
 import { NavLink, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
-function Layout() { // No longer needs to accept { children } as a prop for this App.jsx setup
+function Layout() { // Main layout component for the application
   const { logout } = useAuth();
   const navigate = useNavigate();
 
@@ -36,7 +36,7 @@ function Layout() { // No longer needs to accept { children } as a prop for this
                   Jobs
                 </NavLink>
               </li>
-              {/* Add more navigation links here */}
+              
             </ul>
           </nav>
         </div>
@@ -47,7 +47,7 @@ function Layout() { // No longer needs to accept { children } as a prop for this
 
       {/* Main Content Area */}
       <main className="main-content">
-        {/* RENDER THE OUTLET FOR NESTED ROUTES HERE */}
+        
         <Outlet /> 
       </main>
     </div>

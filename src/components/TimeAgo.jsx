@@ -1,7 +1,7 @@
 // src/components/TimeAgo.jsx
 import React, { useState, useEffect } from 'react';
 
-// This function calculates the time difference and formats it
+//  function calculates the time difference and formats it
 const formatTimeAgo = (dateString) => {
   if (!dateString) return 'N/A';
   const date = new Date(dateString);

@@ -1,4 +1,4 @@
-// src/components/Components/ComponentList.jsx
+
 // Displays a list of components, often used within ShipDetail. [cite: 8]
 import React from 'react';
 

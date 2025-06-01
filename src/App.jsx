@@ -27,15 +27,14 @@ import NotFoundPage from './pages/NotFoundPage';
 function App() {
   return (
     <Router>
-      {/* AuthProvider usually outermost as other contexts might need authentication status */}
+      
       <AuthProvider>
-        {/* CORRECTED ORDER: NotificationProvider now wraps the data providers.
-            This ensures that useNotifications() is always called within a NotificationProvider. */}
+       
         <NotificationProvider>
-          {/* NotificationCenter should be rendered here so it's always visible on top */}
+          
           <NotificationCenter />
 
-          {/* Data Providers are children of NotificationProvider */}
+          
           <ShipsProvider>
             <ComponentsProvider>
               <JobsProvider>

@@ -27,7 +27,7 @@ function JobCalendar() {
     return jobDate.toDateString() === selectedDate.toDateString();
   }).sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate)); // Sort by time
 
-  // Function to add content to calendar tiles (e.g., a dot for scheduled jobs)
+  // Function to add content to calendar tiles 
   const tileContent = ({ date, view }) => {
     if (view === 'month') {
       const dayHasJobs = jobs.some(job => {
@@ -57,9 +57,7 @@ function JobCalendar() {
           onChange={setSelectedDate}
           value={selectedDate}
           tileContent={tileContent}
-          // You can add more props for navigation etc.
-          // view="month" // Can set initial view
-          // showWeekNumbers={true}
+          
         />
       </div>
 

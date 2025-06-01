@@ -1,15 +1,13 @@
 // src/components/Dashboard/Chart.jsx
 import React from 'react';
 import { Pie } from 'react-chartjs-2';
-// IMPORTANT: Make sure you have installed these packages:
-// npm install chart.js react-chartjs-2
+
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 
-// Register Chart.js components. This needs to be done once globally.
-// If you have other charts, ensure these are registered or moved to a central Chart setup file if preferred.
+
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-// We'll pass the 'jobs' array to this Chart component from DashboardPage.jsx
+// pass the 'jobs' array to this Chart component from DashboardPage.jsx
 function Chart({ jobs }) {
   // If jobs data is not available, handle loading/error states or empty display here
   // (DashboardPage will also handle global loading/error, but this is for specific chart data)

@@ -7,7 +7,7 @@ import { useJobs } from '@/contexts/JobsContext';
 import { useComponents } from '@/contexts/ComponentsContext';
 import TimeAgo from '@/components/TimeAgo'; // Assuming this component exists
 
-// Import your existing Chart component
+/
 import Chart from '@/components/Dashboard/Charts'; // Import your Chart.jsx
 
 function DashboardPage() {
