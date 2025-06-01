@@ -101,11 +101,8 @@ To provide a clear overview of the project's organization:
 
 .
 ├── public/
-
 │   ├── favicon.svg         # Application icon
-
-│   └── vite.svg            # Vite default icon (can be removed or replaced)
-
+│   └── vite.svg            # Vite default icon (can be removed or replaced) #
 ├── src/
 
 │   ├── api/                # Simulated API functions (interact with localStorage)
