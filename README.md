@@ -96,26 +96,59 @@ The application uses hardcoded user data stored in your browser's `localStorage`
 **Note:** If you clear your browser's `localStorage` for the application, the initial user data will be re-populated upon the next load (handled by `localStorageUtils.js`).
 
 ## Project Structure
-.
-├── public/                 # Static assets
-├── src/
-│   ├── api/                # Simulated API calls (interacting with localStorage)
-│   ├── components/         # Reusable UI components (buttons, forms, cards, Layout)
-│   │   ├── Layout/         # Main application layout including sidebar
-│   │   └── ...
-│   ├── contexts/           # React Contexts for global state (Auth, Theme, Notification)
-│   ├── pages/              # Top-level components for different routes (Dashboard, Ships, Jobs, Login, etc.)
-│   ├── styles/             # Global CSS styles and variables (main.css)
-│   ├── utils/              # Utility functions (e.g., localStorageUtils.js, dateUtils.js)
-│   ├── App.jsx             # Main application component
-│   ├── main.jsx            # Entry point for React application
-│   └── vite-env.d.ts
-├── .eslintrc.cjs           # ESLint configuration
-├── vite.config.js          # Vite build configuration
-├── package.json
-├── README.md               # This file
-└── ...
 
+To provide a clear overview of the project's organization:
+
+.
+├── public/
+│   ├── favicon.svg         # Application icon
+│   └── vite.svg            # Vite default icon (can be removed or replaced)
+├── src/
+│   ├── api/                # Simulated API functions (interact with localStorage)
+│   │   ├── authApi.js
+│   │   ├── componentApi.js
+│   │   ├── jobApi.js
+│   │   └── shipApi.js
+│   ├── components/         # Reusable UI components
+│   │   ├── Layout/         # Main application layout, sidebar, header
+│   │   │   ├── Layout.jsx
+│   │   │   └── ...
+│   │   ├── common/         # Common small components (buttons, modals, forms)
+│   │   │   ├── Button.jsx
+│   │   │   ├── Modal.jsx
+│   │   │   └── ...         # (Add other common components as needed)
+│   │   └── Dashboard/      # Components specific to the dashboard view
+│   │       ├── StatCard.jsx
+│   │       └── ...         # (Add other dashboard-specific components as needed)
+│   ├── contexts/           # React Contexts for global state management
+│   │   ├── AuthContext.jsx
+│   │   ├── NotificationContext.jsx
+│   │   └── ThemeContext.jsx
+│   ├── pages/              # Top-level components for different application routes
+│   │   ├── DashboardPage.jsx
+│   │   ├── ShipPage.jsx
+│   │   ├── ShipDetailPage.jsx
+│   │   ├── JobsPage.jsx
+│   │   ├── JobCalendarPage.jsx
+│   │   ├── ComponentForm.jsx # Likely for Add/Edit Ship/Component
+│   │   ├── LoginPage.jsx
+│   │   └── NotFoundPage.jsx
+│   ├── styles/             # Global CSS styles
+│   │   └── main.css
+│   ├── utils/              # Utility functions and helper modules
+│   │   ├── localStorageUtils.js # Handles localStorage interactions and initial data
+│   │   ├── roles.js             # Defines user roles and permissions
+│   │   └── dateUtils.js         # (If you have date formatting/handling, e.g., for JobCalendar)
+│   ├── App.jsx             # Main application component, sets up routing
+│   ├── main.jsx            # Entry point for the React application
+│   └── vite-env.d.ts       # Vite environment type definitions
+├── .eslintrc.cjs           # ESLint configuration file
+├── .gitignore              # Files/folders to ignore in Git
+├── index.html              # Main HTML file
+├── package.json            # Project dependencies and scripts
+├── package-lock.json       # Exact dependency versions
+├── README.md               # Project documentation (this file)
+└── vite.config.js          # Vite build configuration
 
 ## How Data Persistence Works
 
