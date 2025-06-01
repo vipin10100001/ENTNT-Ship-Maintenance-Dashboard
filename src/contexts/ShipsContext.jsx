@@ -1,7 +1,7 @@
 // src/contexts/ShipsContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-// Import necessary functions from localStorageUtils, including a new generateUniqueId
-import { getAllShips, saveShips, generateUniqueId } from '@/utils/localStorageUtils'; // Assuming generateUniqueId is added
+import { getAllShips, saveShips, generateUniqueId } from '@/utils/localStorageUtils';
+import { useNotifications } from './NotificationContext'; // Import useNotifications
 
 const ShipsContext = createContext(null);
 
@@ -9,6 +9,7 @@ export const ShipsProvider = ({ children }) => {
   const [ships, setShips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { addNotification } = useNotifications(); // Get addNotification from NotificationContext
 
   // Load ships on initial mount
   useEffect(() => {
@@ -20,6 +21,7 @@ export const ShipsProvider = ({ children }) => {
       } catch (err) {
         console.error("Failed to load ships:", err);
         setError("Failed to load ships.");
+        addNotification("Failed to load ships.", 'error'); // Notify on load error
       } finally {
         setLoading(false);
       }
@@ -32,19 +34,21 @@ export const ShipsProvider = ({ children }) => {
     try {
       setLoading(true);
       const newShip = {
-        id: generateUniqueId('s'), // Generate a unique ID, e.g., 's12345'
+        id: generateUniqueId('s'),
         ...newShipData,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       const updatedShips = [...ships, newShip];
-      await saveShips(updatedShips); // Save to local storage
-      setShips(updatedShips); // Update state
+      await saveShips(updatedShips);
+      setShips(updatedShips);
+      addNotification(`Ship "${newShip.name}" created successfully!`, 'success'); // Notify on success
       return newShip;
     } catch (err) {
       console.error("Error adding ship:", err);
       setError("Failed to add ship.");
-      throw err; // Re-throw to be caught by component
+      addNotification(`Failed to add ship: ${err.message}`, 'error'); // Notify on error
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -59,42 +63,46 @@ export const ShipsProvider = ({ children }) => {
       );
       await saveShips(updatedShips);
       setShips(updatedShips);
+      addNotification(`Ship "${updatedShipData.name}" updated successfully!`, 'success'); // Notify on success
       return updatedShipData;
     } catch (err) {
       console.error("Error updating ship:", err);
       setError("Failed to update ship.");
+      addNotification(`Failed to update ship: ${err.message}`, 'error'); // Notify on error
       throw err;
     } finally {
       setLoading(false);
     }
   };
 
-  // Function to delete a ship (optional, but good to add now)
+  // Function to delete a ship
   const deleteShip = async (shipId) => {
     try {
       setLoading(true);
+      const shipToDelete = ships.find(ship => ship.id === shipId);
       const updatedShips = ships.filter(ship => ship.id !== shipId);
       await saveShips(updatedShips);
       setShips(updatedShips);
+      addNotification(`Ship "${shipToDelete?.name || 'N/A'}" deleted successfully!`, 'success'); // Notify on success
       return true;
     } catch (err) {
       console.error("Error deleting ship:", err);
       setError("Failed to delete ship.");
+      addNotification(`Failed to delete ship: ${err.message}`, 'error'); // Notify on error
       throw err;
     } finally {
       setLoading(false);
     }
   };
-
 
   const value = {
     ships,
     loading,
     error,
-    addShip,   // Expose addShip
-    updateShip, // Expose updateShip
-    deleteShip, // Expose deleteShip
-    getShipById: (id) => ships.find(ship => ship.id === id), // Helper to get a single ship
+    addShip,
+    updateShip,
+    deleteShip,
+    getShipById: (id) => ships.find(ship => ship.id === id),
   };
 
   return <ShipsContext.Provider value={value}>{children}</ShipsContext.Provider>;

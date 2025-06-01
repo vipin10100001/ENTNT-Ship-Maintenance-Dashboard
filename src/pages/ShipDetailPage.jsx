@@ -1,138 +1,236 @@
 // src/pages/ShipDetailPage.jsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useShips } from '@/contexts/ShipsContext';        // Use alias
-import { useComponents } from '@/contexts/ComponentsContext'; // Use alias
-import { useJobs } from '@/contexts/JobsContext';         // Use alias
-import { useAuth } from '@/contexts/AuthContext'; // To check user roles
+import { useShips } from '@/contexts/ShipsContext';
+import { useComponents } from '@/contexts/ComponentsContext';
+import { useJobs } from '@/contexts/JobsContext';
+import { useAuth } from '@/contexts/AuthContext';       // For hasRole
+import ComponentForm from '@/components/Components/ComponentForm';
+import JobForm from '@/components/Jobs/JobForm';
+import TimeAgo from '@/components/TimeAgo'; // Assuming you have this now. If not, uncomment and replace usage.
+
 
 function ShipDetailPage() {
-  const { id } = useParams(); // Get ship ID from URL
+  const { id } = useParams();
   const navigate = useNavigate();
-  const { currentUser, hasRole } = useAuth(); // For role-based access to actions
 
-  // Get data and loading states from contexts
-  const { getShipById, loading: loadingShips, error: errorShips } = useShips();
-  const { components, loading: loadingComponents, error: errorComponents } = useComponents();
-  const { jobs, loading: loadingJobs, error: errorJobs } = useJobs();
+  const { ships, loading: loadingShips, error: errorShips, getShipById } = useShips();
+  const { components, loading: loadingComponents, error: errorComponents, deleteComponent } = useComponents();
+  const { jobs, loading: loadingJobs, error: errorJobs, deleteJob } = useJobs();
+  // CORRECTED LINE BELOW: Destructure allUsers, loadingAuth, and errorAuth from useAuth
+  const { hasRole, users: allUsers, loading: loadingAuth, error: errorAuth } = useAuth();
 
-  // Find the specific ship
+  const [showComponentForm, setShowComponentForm] = useState(false);
+  const [componentToEdit, setComponentToEdit] = useState(null);
+
+  const [showJobForm, setShowJobForm] = useState(false);
+  const [jobToEdit, setJobToEdit] = useState(null);
+
   const ship = getShipById(id);
+  const shipComponents = components.filter(comp => comp.shipId === id);
+  const shipJobs = jobs.filter(job => job.shipId === id)
+                        .sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate));
 
-  // Filter components and jobs related to this ship
-  const shipComponents = components.filter(component => component.shipId === id);
-  const maintenanceHistory = jobs
-    .filter(job => job.shipId === id)
-    .sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate)); // Sort by most recent job first
+  // Handlers for Component Form
+  const handleAddComponentClick = () => {
+    setComponentToEdit(null);
+    setShowComponentForm(true);
+  };
 
-  // Handle loading states
-  if (loadingShips || loadingComponents || loadingJobs) {
-    return <div className="loading-fullscreen">Loading ship details...</div>;
+  const handleEditComponent = (comp) => {
+    setComponentToEdit(comp);
+    setShowComponentForm(true);
+  };
+
+  const handleDeleteComponent = async (componentId, componentName, shipId) => {
+    if (window.confirm(`Are you sure you want to delete component "${componentName}" from this ship?`)) {
+      try {
+        await deleteComponent(componentId);
+        alert(`Component "${componentName}" deleted successfully!`);
+      } catch (err) {
+        alert(`Failed to delete component "${componentName}". Error: ${err.message}`);
+      }
+    }
+  };
+
+  const handleCloseComponentForm = () => {
+    setShowComponentForm(false);
+    setComponentToEdit(null);
+  };
+
+  // Handlers for Job Form
+  const handleEditJob = (job) => {
+    setJobToEdit(job);
+    setShowJobForm(true);
+  };
+
+  const handleDeleteJob = async (jobId, jobDescription, shipId, componentId) => {
+    const componentName = components.find(c => c.id === componentId)?.name || 'N/A';
+    if (window.confirm(`Are you sure you want to delete job "${jobDescription}" for component "${componentName}"? This action cannot be undone.`)) {
+      try {
+        await deleteJob(jobId);
+        alert(`Job "${jobDescription}" deleted successfully!`);
+      } catch (err) {
+        alert(`Failed to delete job "${jobDescription}". Error: ${err.message}`);
+      }
+    }
+  };
+
+  const handleCloseJobForm = () => {
+    setShowJobForm(false);
+    setJobToEdit(null);
+  };
+
+  // Helper to get Engineer Email for Job History
+  const getEngineerEmail = (engineerId) => {
+    const engineer = allUsers.find(u => u.id === engineerId && u.role === 'Engineer');
+    return engineer ? engineer.email : 'Unassigned';
+  };
+
+  // CORRECTED: Include loadingAuth and errorAuth in checks
+  if (loadingShips || loadingComponents || loadingJobs || loadingAuth) {
+    return <div className="loading-fullscreen">Loading ship profile...</div>;
   }
 
-  // Handle errors
-  if (errorShips || errorComponents || errorJobs) {
-    return <div className="error-message">Error loading ship details: {errorShips || errorComponents || errorJobs}</div>;
+  if (errorShips || errorComponents || errorJobs || errorAuth) {
+    return <div className="error-message">Error loading ship profile: {errorShips || errorComponents || errorJobs || errorAuth}</div>;
   }
 
-  // Handle ship not found
   if (!ship) {
     return <div className="error-message">Ship not found.</div>;
   }
 
   return (
-    <div className="ship-detail-page"> {/* Changed container name for consistency */}
+    <div className="ship-detail-page">
       <div className="main-content-header">
         <h1>Ship Profile: {ship.name}</h1>
-        {hasRole(['Admin', 'Inspector']) && ( // Only Admins/Inspectors can add/edit components/jobs
-          <div className="ship-actions">
-            {/* You'll add buttons to add/edit components/jobs here later */}
-            <button className="btn-secondary" onClick={() => navigate(`/ships`)}>Back to Ships</button>
+        <button onClick={() => navigate('/ships')} className="btn-secondary">Back to Ships</button>
+      </div>
+
+      {/* Conditional Forms */}
+      {showComponentForm && (
+        <ComponentForm
+          componentToEdit={componentToEdit}
+          onClose={handleCloseComponentForm}
+          shipId={ship.id}
+        />
+      )}
+      {showJobForm && (
+        <JobForm
+          jobToEdit={jobToEdit}
+          onClose={handleCloseJobForm}
+        />
+      )}
+
+      {/* General Information Section */}
+      {!showComponentForm && !showJobForm && (
+        <>
+          <div className="card general-info-section">
+            <h2>General Information</h2>
+            <p><strong>Name:</strong> {ship.name}</p>
+            <p><strong>IMO Number:</strong> {ship.imo}</p>
+            <p><strong>Flag:</strong> {ship.flag}</p>
+            <p><strong>Status:</strong> {ship.status}</p>
           </div>
-        )}
-      </div>
 
-      <div className="card">
-        <h2>General Information</h2>
-        <p><strong>Name:</strong> {ship.name}</p>
-        <p><strong>IMO Number:</strong> {ship.imo}</p>
-        <p><strong>Flag:</strong> {ship.flag}</p>
-        <p><strong>Status:</strong> {ship.status}</p>
-        {/* Add more general info fields if your ship mock data has them */}
-      </div>
+          {/* Components Installed Section */}
+          <div className="card components-installed-section">
+            <div className="card-header-with-button">
+              <h2>Components Installed</h2>
+              {hasRole(['Admin', 'Engineer']) && (
+                <button onClick={handleAddComponentClick}>Add New Component</button>
+              )}
+            </div>
+            {shipComponents.length > 0 ? (
+              <div className="table-responsive">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Serial Number</th>
+                      <th>Installation Date</th>
+                      <th>Last Maintenance Date</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {shipComponents.map(comp => (
+                      <tr key={comp.id}>
+                        <td>{comp.name}</td>
+                        <td>{comp.serialNumber}</td>
+                        <td>{comp.installDate}</td>
+                        <td>{comp.lastMaintenanceDate}</td>
+                        <td>
+                          {hasRole(['Admin', 'Engineer']) && (
+                            <>
+                              <button onClick={() => handleEditComponent(comp)} className="btn-secondary" style={{ marginRight: '10px' }}>Edit</button>
+                              <button onClick={() => handleDeleteComponent(comp.id, comp.name, comp.shipId)} className="btn-danger">Delete</button>
+                            </>
+                          )}
+                          {!hasRole(['Admin', 'Engineer']) && (
+                             <button className="btn-secondary">View</button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p>No components installed on this ship. {hasRole(['Admin', 'Engineer']) && 'Click "Add New Component" to add one.'}</p>
+            )}
+          </div>
 
-      <div className="card">
-        <h2>Components Installed</h2>
-        {shipComponents.length > 0 ? (
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Serial Number</th>
-                <th>Installation Date</th>
-                <th>Last Maintenance</th>
-                <th>Actions</th> {/* Placeholder for component actions */}
-              </tr>
-            </thead>
-            <tbody>
-              {shipComponents.map(component => (
-                <tr key={component.id}>
-                  <td>{component.name}</td>
-                  <td>{component.serialNumber}</td>
-                  <td>{component.installDate}</td>
-                  <td>{component.lastMaintenanceDate || 'N/A'}</td> {/* Display raw date string or 'N/A' */}
-                  <td>
-                    {hasRole(['Admin', 'Inspector']) && (
-                       <button className="btn-secondary" onClick={() => { /* Handle Edit Component */ alert('Edit Component not implemented yet!'); }}>Edit</button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p>No components installed on this ship.</p>
-        )}
-      </div>
-
-      <div className="card">
-        <h2>Maintenance History</h2>
-        {maintenanceHistory.length > 0 ? (
-          <table>
-            <thead>
-              <tr>
-                <th>Job ID</th>
-                <th>Type</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Scheduled Date</th>
-                <th>Assigned Engineer</th>
-                <th>Actions</th> {/* Placeholder for job actions */}
-              </tr>
-            </thead>
-            <tbody>
-              {maintenanceHistory.map(job => (
-                <tr key={job.id}>
-                  <td>{job.id}</td>
-                  <td>{job.type}</td>
-                  <td>{job.priority}</td>
-                  <td>{job.status}</td>
-                  <td>{job.scheduledDate}</td>
-                  {/* You'll need to fetch engineer's name from users based on job.assignedEngineerId */}
-                  <td>{job.assignedEngineerId || 'N/A'}</td>
-                  <td>
-                    {hasRole(['Admin', 'Engineer']) && ( // Admins and Engineers can modify jobs
-                        <button className="btn-secondary" onClick={() => { /* Handle Edit Job */ alert('Edit Job not implemented yet!'); }}>Edit</button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p>No maintenance history available for this ship.</p>
-        )}
-      </div>
+          {/* Maintenance History Section */}
+          <div className="card maintenance-history-section">
+            <h2>Maintenance History</h2>
+            {shipJobs.length > 0 ? (
+              <div className="table-responsive">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Job ID</th>
+                      <th>Type</th>
+                      <th>Priority</th>
+                      <th>Status</th>
+                      <th>Scheduled Date</th>
+                      <th>Assigned Engineer</th>
+                      <th>Last Update</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {shipJobs.map(job => (
+                      <tr key={job.id}>
+                        <td>{job.id.substring(0, 6)}...</td>
+                        <td>{job.type}</td>
+                        <td>{job.priority}</td>
+                        <td>{job.status}</td>
+                        <td>{job.scheduledDate}</td>
+                        <td>{getEngineerEmail(job.assignedEngineerId)}</td>
+                        <td><TimeAgo date={job.updatedAt || job.createdAt} /></td>
+                        <td>
+                          {hasRole(['Admin', 'Engineer']) && (
+                            <>
+                              <button onClick={() => handleEditJob(job)} className="btn-secondary">Edit</button>
+                              <button onClick={() => handleDeleteJob(job.id, job.description, job.shipId, job.componentId)} className="btn-danger">Delete</button>
+                            </>
+                          )}
+                          {!hasRole(['Admin', 'Engineer']) && (
+                            <button className="btn-secondary">View</button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p>No maintenance jobs recorded for this ship.</p>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 // src/contexts/JobsContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getAllJobs, saveJobs, generateUniqueId, getAllUsers } from '../utils/localStorageUtils'; // Import getAllUsers to get engineers
+import { getAllJobs, saveJobs, generateUniqueId } from '../utils/localStorageUtils';
+import { useNotifications } from './NotificationContext'; // Import useNotifications
 
 const JobsContext = createContext(null);
 
@@ -8,6 +9,7 @@ export const JobsProvider = ({ children }) => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { addNotification } = useNotifications(); // Get addNotification from NotificationContext
 
   // Load jobs on initial mount
   useEffect(() => {
@@ -19,6 +21,7 @@ export const JobsProvider = ({ children }) => {
       } catch (err) {
         console.error("Failed to load jobs:", err);
         setError("Failed to load jobs.");
+        addNotification("Failed to load jobs.", 'error'); // Notify on load error
       } finally {
         setLoading(false);
       }
@@ -31,20 +34,21 @@ export const JobsProvider = ({ children }) => {
     try {
       setLoading(true);
       const newJob = {
-        id: generateUniqueId('j'), // Generate a unique ID, e.g., 'j12345'
-        // Ensure newJobData includes componentId, shipId, type, priority, status, assignedEngineerId, scheduledDate
+        id: generateUniqueId('j'),
         ...newJobData,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       const updatedJobs = [...jobs, newJob];
-      await saveJobs(updatedJobs); // Save to local storage
-      setJobs(updatedJobs); // Update state
+      await saveJobs(updatedJobs);
+      setJobs(updatedJobs);
+      addNotification(`Job "${newJob.description || newJob.type}" created successfully!`, 'success'); // Notify on success
       return newJob;
     } catch (err) {
       console.error("Error adding job:", err);
       setError("Failed to add job.");
-      throw err; // Re-throw to be caught by component
+      addNotification(`Failed to create job: ${err.message}`, 'error'); // Notify on error
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -59,10 +63,12 @@ export const JobsProvider = ({ children }) => {
       );
       await saveJobs(updatedJobs);
       setJobs(updatedJobs);
+      addNotification(`Job "${updatedJobData.description || updatedJobData.type}" updated successfully!`, 'success'); // Notify on success
       return updatedJobData;
     } catch (err) {
       console.error("Error updating job:", err);
       setError("Failed to update job.");
+      addNotification(`Failed to update job: ${err.message}`, 'error'); // Notify on error
       throw err;
     } finally {
       setLoading(false);
@@ -73,13 +79,16 @@ export const JobsProvider = ({ children }) => {
   const deleteJob = async (jobId) => {
     try {
       setLoading(true);
+      const jobToDelete = jobs.find(job => job.id === jobId);
       const updatedJobs = jobs.filter(job => job.id !== jobId);
       await saveJobs(updatedJobs);
       setJobs(updatedJobs);
+      addNotification(`Job "${jobToDelete?.description || jobToDelete?.type || 'N/A'}" deleted successfully!`, 'success'); // Notify on success
       return true;
     } catch (err) {
       console.error("Error deleting job:", err);
       setError("Failed to delete job.");
+      addNotification(`Failed to delete job: ${err.message}`, 'error'); // Notify on error
       throw err;
     } finally {
       setLoading(false);
@@ -99,7 +108,7 @@ export const JobsProvider = ({ children }) => {
     updateJob,
     deleteJob,
     getJobById: (id) => jobs.find(job => job.id === id),
-    getJobsByShipId, // Expose the helper
+    getJobsByShipId,
   };
 
   return <JobsContext.Provider value={value}>{children}</JobsContext.Provider>;

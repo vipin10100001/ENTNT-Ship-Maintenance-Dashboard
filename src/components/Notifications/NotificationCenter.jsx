@@ -1,39 +1,27 @@
 // src/components/Notifications/NotificationCenter.jsx
-// In-app notification system. [cite: 14]
-import React, { useState, useEffect } from 'react';
-// import { useNotifications } from '../../contexts/NotificationContext'; // Will create this context later
+import React from 'react';
+import { useNotifications } from '@/contexts/NotificationContext';
 
 function NotificationCenter() {
-  // Dummy notifications for now
-  const [notifications, setNotifications] = useState([
-    { id: 1, message: 'Welcome to the dashboard!', type: 'info', dismissible: true },
-    { id: 2, message: 'Job J1 created for Ever Given.', type: 'success', dismissible: true },
-  ]);
-
-  const dismissNotification = (id) => {
-    setNotifications(notifications.filter(notif => notif.id !== id));
-  };
-
-  // When NotificationContext is ready, you'll replace `notifications` state with context state
-  // and `dismissNotification` with context's dismiss function.
-
-  if (notifications.length === 0) {
-    return null; // Don't render if no notifications
-  }
+  const { notifications, removeNotification } = useNotifications();
 
   return (
-    <div className="notification-center-container">
-      <h3>Notifications</h3>
-      <div className="notifications-list">
-        {notifications.map((notif) => (
-          <div key={notif.id} className={`notification-item notification-${notif.type}`}>
-            <p>{notif.message}</p>
-            {notif.dismissible && (
-              <button onClick={() => dismissNotification(notif.id)}>Dismiss</button>
-            )}
-          </div>
-        ))}
-      </div>
+    <div className="notification-center">
+      {notifications.map((notification) => (
+        <div
+          key={notification.id}
+          className={`notification-item notification-item--${notification.type}`}
+          role="alert"
+        >
+          <span>{notification.message}</span>
+          <button
+            onClick={() => removeNotification(notification.id)}
+            className="notification-dismiss"
+          >
+            &times;
+          </button>
+        </div>
+      ))}
     </div>
   );
 }
